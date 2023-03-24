@@ -130,6 +130,7 @@ def hr2vr(sec_map_idx, k, hr, area, area_ratio_idx, sec_div, sec_hr_sec_b, sec_a
     :param sec_b:
     :param sec_area:
     :param len_riv_idx:
+
     :return: vr
     """
     #real(8) hr, vr, a
@@ -170,7 +171,8 @@ def vr2hr( sec_map_idx, k, vr, area, area_ratio_idx, sec_div, len_riv_idx, sec_a
     :param sec_area:
     :param sec_b:
     :param sec_hr:
-    :return hr:
+    
+    :return: hr
     """ 
     #real(8) hr, vr, a
     ids = sec_map_idx[k]
@@ -196,46 +198,49 @@ def vr2hr( sec_map_idx, k, vr, area, area_ratio_idx, sec_div, len_riv_idx, sec_a
 #end
 
 
-def hr_update(hr_org, vr_inc, k, hr_new):
-#use globals
-#implicit none
+def hr_update(hr_org, vr_inc, k):
+    """
+    Update hr values
 
-#real(8) hr_org, vr_inc, hr_new, vr_org, vr_new
-#integer k
+    :param hr_org:
+    :param k:
+    :param vr_inc:
 
-vr_org = hr2vr(hr_org, k)
-vr_new = vr_org + vr_inc
-hr_new = vr2hr(vr_new, k)
+    :return: hr
+    """
+    vr_org = hr2vr(hr_org, k)
+    vr_new = vr_org + vr_inc
+    hr_new = vr2hr(vr_new, k)
 
-return(hr_new)
+    return(hr_new)
 #end
 
 
-def sec_h2b(h, k, b):
-#use globals
-#implicit none
+def sec_h2b(sec_map_idx, k, width_idx, sec_div, sec_hr, sec_b):
+    """
+    Section h2b
+    
+    :param sec_map_idx:
+    :param k:
+    :param width_idx:
+    :param sec_div:
+    :param sec_hr:
+    :param sec_b:
 
-#real(8) h, b
-#integer k, id, div_max, i
-
-ids = sec_map_idx(k)
-if( ids .le. 0 ) then
-
- b = width_idx(k)
-
-else
-
- div_max = sec_div(ids)
-
- do i = 1, div_max
-  if( h .le. sec_hr(ids, i) ) then
-   b = sec_b(ids, i)
-   exit
-  #endif
-  b = sec_b(ids, div_max)
- #enddo
-
-#endif
-
-return
+    :return: b
+    """
+    ids = sec_map_idx[k]
+    if( ids <= 0 ):
+        b = width_idx[k]
+    else:
+        div_max = sec_div[ids]
+        for i in range( div_max ):
+            if( h <= sec_hr[ids, i] ):
+                b = sec_b[ids, i]
+                break
+            #endif
+            b = sec_b[ids, div_max]
+        #enddo
+    #endif
+    return(b)
 #end

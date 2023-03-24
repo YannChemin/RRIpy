@@ -215,7 +215,7 @@ parameter( ddt_min_slo = 1.0 )
 #parameter( ddt_min_slo = 1.0 )
 
 float safety, pgrow, pshrnk, errcon
-parameter (safety=0.90,pgrow=-.20,pshrnk=-.250,errcon=1.89d-4)
+parameter (safety=0.90,pgrow=-.20,pshrnk=-.250,errcon=1.89e-4)
 
 float ks2[:], ks3[:], ks4[:], ks5[:], ks6[:]
 float hs_temp[:], hs_err[:]

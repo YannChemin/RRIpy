@@ -1,11 +1,30 @@
 # RRI_Section
 
-def set_section(sec_id_max):
+def set_section(sec_id_max, sec_map, sec_div, secfile, depth, width, height, riv):
     """
     Set section
 
     :param sec_id_max: The maximum value of sec_map
+    :param sec_map:
+    :param sec_div:
+    :param secfile: section filename
+    :param depth:
+    :param height:
+    :param width:
+    :param riv:
 
+    :return: width
+    :return: sec_width
+    :return: depth
+    :return: sec_depth
+    :return: height
+    :return: sec_height
+    :return: sec_hr
+    :return: sec_area
+    :return: sec_peri
+    :return: sec_b
+    :return: sec_ns_river
+    :return: riv
     """
     #integer i, j, k, id, div_max
     #real(8) rdummy
@@ -40,7 +59,7 @@ def set_section(sec_id_max):
 
     for i in range(ny):
         for j in range(nx):
-            ids = sec_map(i, j)
+            ids = sec_map[i, j]
             if( ids == 0 ):
                 id_char = int2char( ids )
                 sec_file_name = trim(sec_file) + trim(id_char) + ".txt"
@@ -65,8 +84,7 @@ def set_section(sec_id_max):
             #endif
         #enddo
     #enddo
-
-return
+return(width, sec_width, depth, sec_depth, height, sec_height, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv)
 #end
 
 

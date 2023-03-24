@@ -240,3 +240,52 @@ parameter (a2=.20,a3=.30,a4=.60,a5=1.0,a6=.8750,b21=.20,b31=3.0/40.0, &
 float errmax
 
 #end module runge_mod
+
+
+#THIS IS RRI_Mod_Dam.f90
+#module dam_mod
+
+int dam_switch
+#character*256 damfile                            # dam control file
+    
+int dam_num                               # number of dam
+#character*256 dam_name[:]        # dam name
+
+int dam_kind[:]              # dam id number
+int dam_ix[:], dam_iy[:]     # dam location (x, y)
+int dam_loc[:]               # dam location (k)
+int dam_state[:]             # dam status (full:1, not full:0)
+int damflg[:]                # dam exist at each grid-cell (exist:1, not exist:0)
+
+float dam_qin[:]               # dam inflow
+float dam_vol[:]               # storage volume
+float dam_vol_temp[:]          # storage volume (temporary)
+float dam_volmax[:]            # maximum storage
+float dam_qout[:]              # dam outflow
+float dam_floodq[:]            # flood discharge
+float dam_maxfloodq[:]         # max flood discharge (for non-const. cont.)
+float dam_rate[:]              # discharge increasing rate
+
+#end module dam_mod
+
+
+#THIS IS RRI_Mod_Tecout.f90
+#module tecout_mod
+    int tec_switch
+    #character*256 tecfile
+    int iMX,jMX,ValNum
+    float X[:],Y[:],Z[:,:],Z_buf[:,:]
+    float SufHmax[:,:]
+    #--------
+    #contains
+    #--------
+    def alloc_Vals(nx,ny,ValNum_temp):
+        #int :: nx,ny,ValNum_temp
+        iMX = ny + 1
+        jMX = nx + 1
+        ValNum = ValNum_temp
+        allocate( X[jMX],Y[iMX],Z[iMX,jMX],Z_buf[ny,nx] )
+        allocate( SufHmax(iMX-1,jMX-1) )
+        SufHmax[:,:] = -0.10
+    #end subroutine alloc_Vals
+#end module tecout_mod

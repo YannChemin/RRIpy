@@ -13,19 +13,19 @@ dt = 600			# dt(second)
 dt_riv = 60			# dt_riv
 outnum = 60			# outnum [-]"
 xllcorner_rain = 110.400000	# xllcorner_rain
-yllcorner_rain = -8.158333,	# yllcorner_rain
+yllcorner_rain = -8.158333	# yllcorner_rain
 cellsize_rain_x = 0.0083333333	# cellsize_rain"
 cellsize_rain_y = 0.0083333333	# cellsize_rain"
 
-ns_river = 3.000d-2		# ns_river
+ns_river = 3.000e-2		# ns_river
 num_of_landuse 	= 1		# num_of_landuse
 dif 		= [1]		# diffusion(1) or kinematic(0), one per LU
-ns_slope 	= [4.000d-1]    # ns_slope, one per LU
+ns_slope 	= [4.000e-1]    # ns_slope, one per LU
 soildepth 	= [1.0000] 	# soildepth, one per LU
-gammaa 		= [4.750d-1]    # gammaa, one per LU
+gammaa 		= [4.750e-1]    # gammaa, one per LU
 
 ksv 		= [0.0000]     	# kv (m/s), one per LU
-faif 		= [3.163d-1]   	# Sf (m), one per LU
+faif 		= [3.163e-1]   	# Sf (m), one per LU
 
 ka 		= [0.0000]     	# ka, one per LU
 gammam 		= [0.0000]	# gammam, one per LU
@@ -33,15 +33,15 @@ beta 		= [8.0000]     	# beta, one per LU
 
 ksg		= [0.0]         # ksg (m/s), 1/LU -- set zero for no bedrock gw
 gammag		= [0.0370]      # gammag (-), one per LU
-kg0		= [5.7d-5]      # kg0 (m/s), one per LU
+kg0		= [5.7e-5]      # kg0 (m/s), one per LU
 fpg		= [0.10]        # fg (-), one per LU
 rgl		= [0.0]         # rgl, one per LU
 
 riv_thresh = 20			# riv_thresh
 width_param_c = 5.000		# width_param_c (2.5)
-width_param_s = 3.50d-1		# width_param_s (0.4)
-depth_param_c = 9.50d-1		# depth_param_c (0.1)
-depth_param_s = 2.00d-1		# depth_param_s (0.4)
+width_param_s = 3.50e-1		# width_param_s (0.4)
+depth_param_c = 9.50e-1		# depth_param_c (0.1)
+depth_param_s = 2.00e-1		# depth_param_s (0.4)
 height_param = 0.000		# height_param
 height_limit_param = 20		# height_limit_param
 

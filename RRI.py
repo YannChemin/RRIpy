@@ -272,9 +272,8 @@ def rri():
         f10.close()
         #call read_gis_int(sec_map_file, sec_map)
         sec_id_max = np.max( sec_map )
-        #TODO What is SET_SECTION ?
         # call set_section
-        Bah = set_section(sec_id_max)
+        width, sec_width, depth, sec_depth, height, sec_height, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv = set_section(sec_id_max, sec_map, sec_div, secfile, depth, width, height, riv)
     #endif
     len_riv = np.where(riv == 1, length, len_riv) # added on Dec. 27, 2021
 

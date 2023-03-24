@@ -274,6 +274,7 @@ def rri():
         sec_id_max = np.max( sec_map )
         #TODO What is SET_SECTION ?
         # call set_section
+        Bah = set_section(sec_id_max)
     #endif
     len_riv = np.where(riv == 1, length, len_riv) # added on Dec. 27, 2021
 
@@ -315,60 +316,60 @@ def rri():
     #enddo
 
     # domain setting
-
     # domain = 0 : outside the domain
     # domain = 1 : inside the domain
     # domain = 2 : outlet point (where dir(i,j) = 0 or dir(i,j) = -1),
     #              and cells located at edges
     domain = 0
     num_of_cell = 0
-    for i = 1, ny
-     for j = 1, nx
-      if( zs(i, j) > -100.0 ):
-       domain(i, j) = 1
-       if( dir(i, j).eq.0 ) domain(i, j) = 2
-       if( dir(i, j).eq.-1 ) domain(i, j) = 2
-       num_of_cell = num_of_cell + 1
-      #endif
-     #enddo
+    for i in range(ny):
+        for j in range(nx):
+            if( zs[i, j] > -100.0 ):
+                domain[i, j] = 1
+                if( direc[i, j] == 0 ):
+                    domain[i, j] = 2
+                if( direc[i, j] == -1 ):
+                    domain[i, j] = 2
+            num_of_cell = num_of_cell + 1
+            #endif
+        #enddo
     #enddo
-    print( "num_of_cell : ", num_of_cell
-    print( "total area [km2] : ", num_of_cell * area / (10.0 ** 6.00)
+    print( "num_of_cell : ", num_of_cell)
+    print( "total area [km2] : ", num_of_cell * area / (10.0 ** 6.00))
 
-    # river index setting
+    # TODO river index setting
     call riv_idx_setting
 
-    # slope index setting
+    # TODO slope index setting
     call slo_idx_setting
 
-    # reading dam file
+    # TODO reading dam file
     call dam_read
 
     # initial condition
-    allocate(hs(ny, nx), hr(ny, nx), hg(ny, nx), gampt_ff(ny, nx))
-    allocate(gampt_f(ny, nx), qrs(ny, nx))
+    hs = np.zeros((ny, nx))
+    hr = np.zeros((ny, nx))
+    hg = np.zeros((ny, nx))
+    gampt_ff = np.zeros((ny, nx))
+    gampt_f = np.zeros((ny, nx))
+    qrs = np.zeros((ny, nx))
 
-    hr = -0.10
-    hs = -0.10
-    hg = -0.10
-    gampt_ff = 0.0
-    gampt_f = 0.0
-    qrs = 0.0
+    hr.fill(-0.10)
+    hs.fill(-0.10)
+    hg.fill(-0.10)
 
     #where(riv.eq.1) hr = init_cond_riv
     #where(domain.eq.1) hs = init_cond_slo
-    where(riv.eq.1) hr = 0.0
-    where(domain.eq.1) hs = 0.0
-    where(domain.eq.2) hs = 0.0
+    hr = np.where(riv == 1, 0.0, hr)
+    hs = np.where(domain == 1, 0.0, hs)
+    hs = np.where(domain == 2, 0.0, hs)
 
     # for slope cells
     # if init_slo_switch = 1 => read from file
 
     if(init_slo_switch == 1):
-
-     allocate( inith(ny, nx) )
-     inith = 0.0
-     open(13, file = initfile_slo, status = "old")
+        inith = np.zeros((ny, nx))
+        open(13, file = initfile_slo, status = "old")
      for i = 1, ny
       read(13,*) (inith(i,j), j = 1, nx)
      #enddo

@@ -115,3 +115,38 @@ outfile_storage = "./out/storage.dat"
 
 hydro_switch = 1
 location_file = "./location.txt"
+
+# Parameter Check
+for i in range(0, num_of_landuse):
+    if( ksv[i] > 0.0 and ka[i] > 0.0 ):
+        raise Exception ("Error: both ksv and ka are non-zero.")
+    if( gammam[i] > gammaa[i] ):
+        raise Exception ("Error: gammam must be smaller than gammaa.")
+#enddo
+
+# Set da, dm and infilt_limit
+da = np.zeros(num_of_landuse)
+dm = np.zeros(num_of_landuse)
+infilt_limit = np.zeros(num_of_landuse)
+for i in range(0, num_of_landuse):
+    if( soildepth[i] > 0.0 and ksv[i] > 0.0 ):
+        infilt_limit[i] = soildepth[i] * gammaa[i]
+    if( soildepth[i] > 0.0 and ka[i] > 0.0 ):
+        da[i] = soildepth[i] * gammaa[i]
+    if( soildepth[i] > 0.0 and ka[i] > 0.0 and gammam[i] > 0.0 ):
+        dm[i] = soildepth[i] * gammam[i]
+#enddo
+
+# if ksg(i) = 0.d0 -> no gw calculation
+gw_switch = 0
+for i in range(0, num_of_landuse):
+    if( ksg[i] > 0.0 ):
+        gw_switch = 1
+    else:
+        gammag[i] = 0.0
+        kg0[i] = 0.0
+        fpg[i] = 0.0
+        rgl[i] = 0.0
+    #endif
+#enddo
+

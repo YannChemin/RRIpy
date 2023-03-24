@@ -116,93 +116,83 @@ def sec_hq_riv(h, dh, k, q):
     #end
 
 
-def hr2vr(hr, k, vr):
-#use globals
-#implicit none
-
-#real(8) hr, vr, a
-#integer k, id, div_max, i
-
-ids = sec_map_idx(k)
-
-if( ids .le. 0 ) then
-
- vr = hr * area * area_ratio_idx(k)
-
-else
-
- div_max = sec_div(ids)
-
- if( hr .le. sec_hr(ids, 1) ) then
-
-  a = hr * sec_b(ids, 1)
-
- elseif( hr .gt. sec_hr(ids, div_max) ) then
-
-  a = sec_area(ids, div_max) + (hr - sec_hr(ids, div_max)) * sec_b(ids, div_max)
-
- else
-
-  do i = 2, div_max
-
-   if( hr .le. sec_hr(ids, i) ) then
-    a = sec_area(ids, i - 1) + (hr - sec_hr(ids, i - 1)) * sec_b(ids, i)
-    exit
-   #endif
-
-  #enddo
- #endif
-
- vr = a * len_riv_idx(k)
-
-#endif
-
-return
+def hr2vr(sec_map_idx, k, hr, area, area_ratio_idx, sec_div, sec_hr_sec_b, sec_area, len_riv_idx):
+    """
+    Convert hr to vr
+    
+    :param sec_map_idx:
+    :param k:
+    :param hr:
+    :param area:
+    :param area_ratio_idx:
+    :param sec_div:
+    :param sec_hr:
+    :param sec_b:
+    :param sec_area:
+    :param len_riv_idx:
+    :return: vr
+    """
+    #real(8) hr, vr, a
+    ids = sec_map_idx[k]
+    if( ids <= 0 ):
+        vr = hr * area * area_ratio_idx[k]
+    else:
+        div_max = sec_div[ids]
+        if( hr <= sec_hr[ids, 1] ):
+            a = hr * sec_b[ids, 1]
+        else if( hr > sec_hr[ids, div_max] ):
+            a = sec_area[ids, div_max] + (hr - sec_hr[ids, div_max]) * sec_b[ids, div_max]
+        else:
+            for i in range( 1, div_max ):
+                if( hr <= sec_hr[ids, i] ):
+                    a = sec_area[ids, i - 1] + (hr - sec_hr[ids, i - 1]) * sec_b[ids, i]
+                    break
+                #endif
+            #enddo
+        #endif
+        vr = a * len_riv_idx[k]
+    #endif
+return(vr)
 #end
 
 
-def vr2hr( vr, k, hr ):
-#use globals
-#implicit none
+def vr2hr( sec_map_idx, k, vr, area, area_ratio_idx, sec_div, len_riv_idx, sec_area, sec_b, sec_hr ):
+    """
+    Convert hr to vr
 
-#real(8) hr, vr, a
-#integer k, id, div_max, i
-
-ids = sec_map_idx(k)
-
-if( ids .le. 0 ) then
-
- hr = vr / ( area * area_ratio_idx(k) )
-
-else
-
- div_max = sec_div(ids)
-
- a = vr / len_riv_idx(k)
-
- if( a .le. sec_area(ids, 1) ) then
-
-  hr = a / sec_b(ids, 1)
-
- elseif( a .gt. sec_area(ids, div_max) ) then
-
-  hr = (a - sec_area(ids, div_max)) / sec_b(ids, div_max) + sec_hr(ids, div_max)
-
- else
-
-  do i = 2, div_max
-
-   if( a .le. sec_area(ids, i) ) then
-    hr = (a - sec_area(ids, i-1)) / sec_b(ids, i) + sec_hr(ids, i - 1)
-    exit
-   #endif
-
-  #enddo
- #endif
-
-#endif
-
-return
+    :param sec_map_idx:
+    :param k:
+    :param vr:
+    :param area:
+    :param area_ratio_idx:
+    :param sec_div:
+    :param len_riv_idx:
+    :param sec_area:
+    :param sec_b:
+    :param sec_hr:
+    :return hr:
+    """ 
+    #real(8) hr, vr, a
+    ids = sec_map_idx[k]
+    if( ids <= 0 ):
+        hr = vr / ( area * area_ratio_idx[k] )
+    else:
+        div_max = sec_div[ids]
+        a = vr / len_riv_idx[k]
+        if( a <= sec_area[ids, 1] ):
+            hr = a / sec_b[ids, 1]
+        else if( a > sec_area[ids, div_max] ):
+            hr = (a - sec_area[ids, div_max]) / sec_b[ids, div_max] + sec_hr[ids, div_max]
+        else:
+            for i in range(1, div_max):
+                if( a <= sec_area[ids, i] ):
+                        hr = (a - sec_area[ids, i-1]) / sec_b[ids, i] + sec_hr[ids, i - 1]
+                        break
+                #endif
+            #enddo
+        #endif
+    #endif
+    return(hr)
 #end
 
 

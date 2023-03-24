@@ -10,10 +10,11 @@ def rri():
 
     :Version: 1.4.2.7
     """
-    #use globals
-    #use runge_mod
-    #use dam_mod, only: dam_switch, dam_vol_temp
-    #use tecout_mod
+    # TODO at some point
+    #from globals import runge_mod
+    #from globals import dam_mod.dam_switch as dam_switch
+    #from globals import dam_mod.dam_vol_temp as dam_vol_temp
+    #from globals import tecout_mod
 
     # variable definition
 

@@ -178,7 +178,7 @@ def gw_recharge(hs_idx, gampt_ff_idx, hg_idx):
         if(gammag_idx[k] > 0.0):
             hg_idx[k] = hg_idx[k] - rech / gammag_idx[k]
 
-        rech_hs_tsas[k] = rech_hs / dble(dt)
+        rech_hs_tsas[k] = rech_hs / float(dt)
     #enddo
 
 #end def gw_recharge
@@ -224,7 +224,7 @@ def gw_exfilt(hs_idx, gampt_ff_idx, hg_idx)
             gampt_ff_idx[k] = gampt_ff_idx[k] + exfilt_ga
         
         hs_idx[k] = hs_idx[k] + exfilt_hs
-        exfilt_hs_tsas[k] = exfilt_hs / dble(dt)
+        exfilt_hs_tsas[k] = exfilt_hs / float(dt)
     #enddo
 #end def gw_exfilt
 

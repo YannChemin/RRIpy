@@ -557,26 +557,27 @@ def rri():
     print(tt_max_rain, nx_rain, ny_rain)
     qp = 0.0
     qp_t = 0.0 # added by T.Sayamaa on Dec 7, 2022 v1.4.2.7
-    for tt in range( tt_max_rain ):
+    for tt in range(0, tt_max_rain, nx_rain + 1):
         if ( tt % ( nx_rain + 1 ) == 0 ):
-            t_rain[tt], nx_rain, ny_rain = lines_list[i].split(" ")
-        else:
+            t_rain[tt], nx_rain, ny_rain = lines_list[tt].split(" ")
             for i in range( ny_rain ):
-                qp[tt, i, j] = lines_list[i].split(" ")[j]
+                for j in range( nx_rain ):
+                    qp[tt, i, j] = lines_list[tt+i].split(" ")[j]
+                #enddo
             #enddo
         #ENDIF
     #enddo
     # unit convert from (mm/h) to (m/s)
     qp = qp / 3600.0 / 1000.0
     for j in range( nx ):
-        rain_j[j] = int( (xllcorner + (dble[j] - 0.50) * cellsize - xllcorner_rain) / cellsize_rain_x ) + 1
+        rain_j[j] = int( (xllcorner + (float[j] - 0.50) * cellsize - xllcorner_rain) / cellsize_rain_x ) + 1
     #enddo
     for i in range( ny ):
-        rain_i[i] = ny_rain - int( (yllcorner + (dble[ny] - dble[i] + 0.50) * cellsize - yllcorner_rain) / cellsize_rain_y )
+        rain_i[i] = ny_rain - int( (yllcorner + (float[ny] - float[i] + 0.50) * cellsize - yllcorner_rain) / cellsize_rain_y )
     #enddo
     f11.close()
-
     print( "done: reading rain file" )
+
 
     # reading evp data
     if( evp_switch != 0 ):
@@ -587,27 +588,31 @@ def rri():
         t_evp = np.zeros(tt_max_evp)
         qe = np.zeros((tt_max_evp, ny_evp, nx_evp))
         qe_t = np.zeros((ny, nx))
-        for tt in range( tt_max_evp ):
-            read(11, *) t_evp(tt), nx_evp, ny_evp
-            for i = 1, ny_evp
-                read(11, *) (qe(tt, i, j), j = 1, nx_evp)
-            #enddo
+        for tt in range(0, tt_max_evp, nx_evp + 1 ):
+            if ( tt % ( nx_rain + 1 ) == 0 ):
+                t_evp[tt], nx_evp, ny_evp = lines_list[tt].split(" ")
+                for i in range( ny_evp ):
+                    for j in range( nx_evp ):
+                        qe[tt, i, j] = lines_list[tt+i].split(" ")[j]
+                    #enddo
+                #enddo
+            #endif
         #enddo
         # unit convert from (mm/h) to (m/s)
         qe = qe / 3600.0 / 1000.0
         for j in range( nx ):
-            evp_j[j] = int( (xllcorner + (dble[j] - 0.50) * cellsize - xllcorner_evp) / cellsize_evp_x ) + 1
+            evp_j[j] = int( (xllcorner + (float[j] - 0.50) * cellsize - xllcorner_evp) / cellsize_evp_x ) + 1
         #enddo
         for i in range( ny ):
-            evp_i[i] = ny_evp - int( (yllcorner + (dble[ny] - dble[i] + 0.50) * cellsize - yllcorner_evp) / cellsize_evp_y )
+            evp_i[i] = ny_evp - int( (yllcorner + (float[ny] - float[i] + 0.50) * cellsize - yllcorner_evp) / cellsize_evp_y )
         #enddo
         f11.close()
         print( "done: reading evp file")
     #endif
 
     # For TSAS Output (Initial Condition)
-    call sub_slo_ij2idx( hs, hs_idx )
-    call sub_riv_ij2idx( hr, hr_idx )
+    hs_idx = sub_slo_ij2idx( hs )
+    hr_idx = sub_riv_ij2idx( hr )
     #call RRI_TSAS(0, hs_idx, hr_idx, hg_idx, qs_ave_idx, qr_ave_idx, qg_ave_idx, qp_t_idx)
 
     ##########################################################
@@ -619,7 +624,7 @@ def rri():
     sout = 0.0
 
     # output timestep
-    out_dt = dble(maxt) / dble(outnum)
+    out_dt = float(maxt) / float(outnum)
     out_dt = max(1.0, out_dt)
     out_next = nint(out_dt)
     tt = 0
@@ -740,7 +745,7 @@ def rri():
       #endif
       if(time.ge.t * dt) exit # finish for this timestep
      #enddo
-     qr_ave_idx = qr_ave_idx / dble(dt) / 6.0
+     qr_ave_idx = qr_ave_idx / float(dt) / 6.0
 
      for k = 1, riv_count
       call vr2hr(vr_idx[k], k, hr_idx[k])
@@ -867,13 +872,13 @@ def rri():
       # cumulative rainfall
       for i = 1, ny
        for j = 1, nx
-        if( domain(i,j) != 0 ) rain_sum = rain_sum + dble(qp_t(i, j) * area * ddt)
+        if( domain(i,j) != 0 ) rain_sum = rain_sum + float(qp_t(i, j) * area * ddt)
        #enddo
       #enddo
 
       if(time.ge.t * dt) exit # finish for this timestep
      #enddo
-     qs_ave_idx = qs_ave_idx / dble(dt) / 6.0 # modified on ver 1.4.1
+     qs_ave_idx = qs_ave_idx / float(dt) / 6.0 # modified on ver 1.4.1
 
      #******* GW CALCULATION ******************************
      if( gw_switch == 0 ) go to 6
@@ -963,7 +968,7 @@ def rri():
 
       if(time.ge.t * dt) exit # finish for this timestep
      #enddo
-     qg_ave_idx = qg_ave_idx / dble(dt) / 6.0
+     qg_ave_idx = qg_ave_idx / float(dt) / 6.0
 
      time = t * dt
 

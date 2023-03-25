@@ -626,53 +626,52 @@ def rri():
     # output timestep
     out_dt = float(maxt) / float(outnum)
     out_dt = max(1.0, out_dt)
-    out_next = nint(out_dt)
+    out_next = round(out_dt)
     tt = 0
 
-    for t = 1, maxt
+    for t in range( maxt ):
+        if(t % 1 == 0):
+            print( t, "/", maxt )
+        #******* RIVER CALCULATION ******************************
+        if( riv_thresh > 0 ):
+            # if (riv_thresh < 0) go to 2 # TODO Deal with GOTO 2
+            # from time = (t - 1) * dt to t * dt
+            time = (t - 1) * dt # (current time)
+            # time step is initially set to be "dt_riv"
+            ddt = dt_riv
+            ddt_chk_riv = dt_riv
 
-     if(mod(t, 1) == 0) print( t, "/", maxt
+            qr_ave = 0.0
+            qr_ave_idx = 0.0
+            if( dam_switch == 1 ):
+                dam_vol_temp.fill(0.0)
+            # hr -> hr_idx
+            # Memo: riv_ij2idx must be here. 
+            # hr_idx cannot be replaced within the following for loop.
+            hr_idx = sub_riv_ij2idx( hr )
+            # from hr_idx -> vr_idx
+            for k in range( riv_count ):
+                vr_idx[k] = hr2vr(hr_idx[k], k)
+            #enddo
 
-     #******* RIVER CALCULATION ******************************
-     if( riv_thresh < 0 ) go to 2
-
-     # from time = (t - 1) * dt to t * dt
-     time = (t - 1) * dt # (current time)
-     # time step is initially set to be "dt_riv"
-     ddt = dt_riv
-     ddt_chk_riv = dt_riv
-
-     qr_ave = 0.0
-     qr_ave_idx = 0.0
-     if( dam_switch == 1 ) dam_vol_temp[:] = 0.0
-
-     # hr -> hr_idx
-     # Memo: riv_ij2idx must be here. 
-     # hr_idx cannot be replaced within the following for loop.
-     call sub_riv_ij2idx( hr, hr_idx )
-
-     # from hr_idx -> vr_idx
-     for k = 1, riv_count
-      call hr2vr(hr_idx[k], k, vr_idx[k])
-     #enddo
-
-     do
-
-      # "time + ddt" should be less than "t * dt"
-      if(time + ddt > t * dt ) ddt = t * dt - time
-
-      # boundary condition for river (water depth boundary)
-      if( bound_riv_wlev_switch >= 1 ):
-       itemp = -1
-       for jtemp = 1, tt_max_bound_riv_wlev
-        if( t_bound_riv_wlev(jtemp-1) < (time + ddt) .and. (time + ddt) <= t_bound_riv_wlev(jtemp) ) itemp = jtemp
-       #enddo
-       for k = 1, riv_count
-        if( bound_riv_wlev_idx(itemp, k) <= -100.0 ) continue # not boundary
-        hr_idx[k] = bound_riv_wlev_idx(itemp, k)
-        call hr2vr(hr_idx[k], k, vr_idx[k])
-       #enddo
-      #endif
+            do #-----------------*******************
+                # "time + ddt" should be less than "t * dt"
+                if(time + ddt > t * dt ):
+                    ddt = t * dt - time
+                    # boundary condition for river (water depth boundary)
+                    if( bound_riv_wlev_switch >= 1 ):
+                        itemp = -1
+                    for jtemp in range( tt_max_bound_riv_wlev):
+                        if( t_bound_riv_wlev[jtemp-1] < (time + ddt) and (time + ddt) <= t_bound_riv_wlev[jtemp] ):
+                            itemp = jtemp
+                    #enddo
+                    for k in range( riv_count ):
+                        if( bound_riv_wlev_idx[itemp, k] <= -100.0 ):
+                            continue # not boundary
+                        hr_idx[k] = bound_riv_wlev_idx[itemp, k]
+                        vr_idx[k] = hr2vr(hr_idx[k], k)
+                    #enddo
+                #endif
 
     1 continue
       qr_ave_temp_idx[:] = 0.0
@@ -744,7 +743,7 @@ def rri():
        qr_ave_idx = qr_ave_idx + qr_ave_temp_idx
       #endif
       if(time.ge.t * dt) exit # finish for this timestep
-     #enddo
+     #enddo --------------************
      qr_ave_idx = qr_ave_idx / float(dt) / 6.0
 
      for k = 1, riv_count
@@ -1040,7 +1039,7 @@ def rri():
       print( "OUTPUT :", t, time
 
       tt = tt + 1
-      out_next = nint((tt+1) * out_dt)
+      out_next = round((tt+1) * out_dt)
       call int2char(tt, t_char)
 
       where(domain == 0) hs = -0.10

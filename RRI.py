@@ -302,8 +302,8 @@ def rri():
         zs = np.where( height > 0.0 and riv == 0, zs + height, zs)
     #endif
 
-    #where(riv.eq.1) area_ratio = width / length
-    #where(riv.eq.1) area_ratio = width / len_riv
+    #where(riv == 1) area_ratio = width / length
+    #where(riv == 1) area_ratio = width / len_riv
     area_ratio = np.where(riv == 1, width * len_riv / area, area_ratio) # modified by T.Sayama on Nov. 27, 2021
 
     zb_riv = zs
@@ -358,8 +358,8 @@ def rri():
     hs.fill(-0.10)
     hg.fill(-0.10)
 
-    #where(riv.eq.1) hr = init_cond_riv
-    #where(domain.eq.1) hs = init_cond_slo
+    #where(riv == 1) hr = init_cond_riv
+    #where(domain == 1) hs = init_cond_slo
     hr = np.where(riv == 1, 0.0, hr)
     hs = np.where(domain == 1, 0.0, hs)
     hs = np.where(domain == 2, 0.0, hs)
@@ -428,144 +428,107 @@ def rri():
         f13.close()
     #endif
 
-    # boundary conditions
-    call read_bound
+    # TODO boundary conditions
+    #call read_bound
 
     # div file
-    div_id_max = 0
-    if( div_switch.eq.1 ):
-     open( 20, file = divfile, status = "old" )
-     do
-      read(20, *, iostat = ios) div_org_i, div_org_j, div_dest_i, div_dest_j
-      if(ios != 0) exit
-      div_id_max = div_id_max + 1
-     #enddo
-     print( "div_id_max : ", div_id_max
-     allocate( div_org_idx(div_id_max), div_dest_idx(div_id_max), div_rate(div_id_max) )
-     rewind(20)
-
-     for k = 1, div_id_max
-      read(20, *) div_org_i, div_org_j, div_dest_i, div_dest_j, div_rate[k]
-      div_org_idx[k] = riv_ij2idx( div_org_i, div_org_j )
-      div_dest_idx[k] = riv_ij2idx( div_dest_i, div_dest_j )
-     #enddo
-     print( "done: reading div file"
-     close(20)
+    if( div_switch == 1 ):
+        f20 = open(divfile)
+        lines_list = f20.readlines()
+        div_id_max = len(lines_list)
+        print( "div_id_max : ", div_id_max)
+        div_org_idx = np.zeros(div_id_max)
+        div_dest_idx = np.zeros(div_id_max)
+        div_rate = np.zeros(div_id_max)
+        for k in range( div_id_max ):
+            div_org_i, div_org_j, div_dest_i, div_dest_j, div_rate[k] = lines_list[i].split(" ")
+            div_org_idx[k] = riv_ij2idx[ div_org_i, div_org_j ]
+            div_dest_idx[k] = riv_ij2idx[ div_dest_i, div_dest_j ]
+        #enddo
+        print( "done: reading div file" )
+        f20.close()
     #endif
-
-    # emb file
-    #if( emb_switch.eq.1 ):
-    # allocate (emb_r(ny, nx), emb_b(ny, nx))
-    # call read_gis_real(embrfile, emb_r)
-    # call read_gis_real(embbfile, emb_b)
-
-    # call sub_slo_ij2idx(emb_r, emb_r_idx)
-    # call sub_slo_ij2idx(emb_b, emb_b_idx)
-    ##endif
 
     # hydro file
     if( hydro_switch == 1 ):
-     open( 5, file = location_file, status = "old")
-     open(1012, file = hydro_file )
-     open(1013, file = hydro_hr_file )
-     i = 1
-     do
-      read(5,*,iostat=ios) ctemp, itemp, itemp
-      if(ios.ne.0) exit
-      i = i + 1
-     #enddo
-     maxhydro = i-1
-     rewind(5)
-     allocate( hydro_i(maxhydro), hydro_j(maxhydro) )
-     for i = 1, maxhydro
-      read(5,*) ctemp, hydro_i(i), hydro_j(i)
-     #enddo
-     close(5)
+        f5 = open(location_file)
+        lines_list = f5.readlines()
+        f1012 = open(hydro_file)
+        f1013 = open(hydro_hr_file)
+        maxhydro = len(lines_list) - 1
+        hydro_i = np.zeros(maxhydro)
+        hydro_j = np.zeros(maxhydro)
+        for i in range( maxhydro ):
+            ctemp, hydro_i[i], hydro_j[i] = lines_list[i].split(" ")
+        #enddo
+        f5.close()
     #endif
 
     # dynamic allocation
-    allocate (qs_ave(i4, ny, nx), qr_ave(ny, nx), qg_ave(i4, ny, nx))
+    qs_ave = np.zeros((4, ny, nx))
+    qr_ave = np.zeros((ny, nx))
+    qg_ave = np.zeros((4, ny, nx))
 
-    allocate (qr_idx(riv_count), qr_ave_idx(riv_count), qr_ave_temp_idx(riv_count), hr_idx(riv_count))
-    allocate (fr(riv_count), vr_temp(riv_count), hr_err(riv_count), vr_err(riv_count))
-    allocate (vr_idx(riv_count))
-    allocate (kr2(riv_count), kr3(riv_count), kr4(riv_count), kr5(riv_count), kr6(riv_count))
+    qr_idx = np.zeros(riv_count)
+    qr_ave_idx = np.zeros(riv_count)
+    qr_ave_temp_idx = np.zeros(riv_count)
+    hr_idx = np.zeros(riv_count)
 
-    allocate (qs_idx(i4, slo_count), qs_ave_idx(i4, slo_count), qs_ave_temp_idx(i4, slo_count), hs_idx(slo_count))
-    allocate (qp_t_idx(slo_count))
-    allocate (fs(slo_count), hs_temp(slo_count), hs_err(slo_count))
-    allocate (ks2(slo_count), ks3(slo_count), ks4(slo_count), ks5(slo_count), ks6(slo_count))
+    fr = np.zeros(riv_count)
+    vr_temp = np.zeros(riv_count)
+    hr_err = np.zeros(riv_count)
+    vr_err = np.zeros(riv_count)
+    vr_idx = np.zeros(riv_count)
+    kr2 = np.zeros(riv_count)
+    kr3 = np.zeros(riv_count)
+    kr4 = np.zeros(riv_count)
+    kr5 = np.zeros(riv_count)
+    kr6 = np.zeros(riv_count)
 
-    allocate (qg_idx(i4, slo_count), qg_ave_idx(i4, slo_count), qg_ave_temp_idx(i4, slo_count), hg_idx(slo_count))
-    allocate (fg(slo_count), hg_temp(slo_count), hg_err(slo_count))
-    allocate (kg2(slo_count), kg3(slo_count), kg4(slo_count), kg5(slo_count), kg6(slo_count))
-    allocate (gampt_ff_idx(slo_count), gampt_f_idx(slo_count))
+    qs_idx = np.zeros((4, slo_count))
+    qs_ave_idx = np.zeros((4, slo_count))
+    qs_ave_temp_idx = np.zeros((4, slo_count))
+    hs_idx = np.zeros(slo_count)
 
-    allocate (rain_i(ny), rain_j(nx))
-    allocate (qe_t_idx(slo_count))
-    allocate (evp_i(ny), evp_j(nx))
-    allocate (aevp(ny, nx), aevp_tsas(slo_count), exfilt_hs_tsas(slo_count), rech_hs_tsas(slo_count))
+    qp_t_idx = np.zeros(slo_count)
+    fs = np.zeros(slo_count)
+    hs_temp = np.zeros(slo_count)
+    hs_err = np.zeros(slo_count)
+    ks2 = np.zeros(slo_count)
+    ks3 = np.zeros(slo_count)
+    ks4 = np.zeros(slo_count)
+    ks5 = np.zeros(slo_count)
+    ks6 = np.zeros(slo_count)
 
-    # array initialization
-    qr_ave[:,:] = 0.0
-    qr_idx[:] = 0.0
-    qr_ave_idx[:] = 0.0
-    qr_ave_temp_idx[:] = 0.0
+    qg_idx = np.zeros((4, slo_count))
+    qg_ave_idx = np.zeros((4, slo_count))
+    qg_ave_temp_idx = np.zeros((4, slo_count))
+    hg_idx = np.zeros(slo_count)
+    fg = np.zeros(slo_count)
+    hg_temp = np.zeros(slo_count)
+    hg_err = np.zeros(slo_count)
+    kg2 = np.zeros(slo_count)
+    kg3 = np.zeros(slo_count)
+    kg4 = np.zeros(slo_count)
+    kg5 = np.zeros(slo_count)
+    kg6 = np.zeros(slo_count)
+    gampt_ff_idx = np.zeros(slo_count)
+    gampt_f_idx = np.zeros(slo_count)
 
-    hr_idx[:] = 0.0
-    vr_idx[:] = 0.0
-    fr[:] = 0.0
-    hr_err[:] = 0.0
-    vr_temp[:] = 0.0
-    vr_err[:] = 0.0
-    kr2[:] = 0.0
-    kr3[:] = 0.0
-    kr4[:] = 0.0
-    kr5[:] = 0.0
-    kr6[:] = 0.0
-
-    qs_ave[:,:,:] = 0.0
-    qs_idx[:,:] = 0.0
-    qs_ave_idx[:,:] = 0.0
-    qs_ave_temp_idx[:,:] = 0.0
-    hs_idx[:] = 0.0
-    qp_t_idx[:] = 0.0
-    fs[:] = 0.0
-    hs_temp[:] = 0.0
-    hs_err[:] = 0.0
-    ks2[:] = 0.0
-    ks3[:] = 0.0
-    ks4[:] = 0.0
-    ks5[:] = 0.0
-    ks6[:] = 0.0
-
-    qg_ave[:,:,:] = 0.0
-    qg_idx[:,:] = 0.0
-    qg_ave_idx[:,:] = 0.0
-    qg_ave_temp_idx[:,:] = 0.0
-    hg_idx[:] = 0.0
-    fg[:] = 0.0
-    hg_temp[:] = 0.0
-    hg_err[:] = 0.0
-    gampt_ff_idx[:] = 0.0
-    gampt_f_idx[:] = 0.0
-
-    rain_i[:] = 0
-    rain_j[:] = 0
-    ksv[:] = 0.0
-    faif[:] = 0.0
-    aevp[:,:] = 0.0
-    hg_idx[:] = 0.0
-    evp_i[:] = 0
-    evp_j[:] = 0
-    aevp_tsas[:] = 0.0
-    exfilt_hs_tsas[:] = 0.0
-    rech_hs_tsas[:] = 0.0
+    rain_i = np.zeros(ny)
+    rain_j = np.zeros(nx)
+    qe_t_idx = np.zeros(slo_count)
+    evp_i = np.zeros(ny)
+    evp_j = np.zeros(nx)
+    aevp = np.zeros((ny, nx))
+    aevp_tsas = np.zeros(slo_count)
+    exfilt_hs_tsas = np.zeros(slo_count)
+    rech_hs_tsas = np.zeros(slo_count)
 
     # gw initial setting
     if(init_gw_switch != 1):
-     hg_idx = hg_init(slo_count)
-     hg = sub_slo_idx2ij( hg_idx )
+        hg_idx = hg_init(slo_count)
+        hg = sub_slo_idx2ij( hg_idx )
     #endif
 
     # initial storage calculation
@@ -575,89 +538,71 @@ def rri():
     sout = 0.0
     si = 0.0
     sg = 0.0
-    open( 1000, file = outfile_storage )
-    call storage_calc(hs, hr, hg, ss, sr, si, sg)
+    ss, sr, si, sg = storage_calc(hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx)
     sinit = ss + sr + si + sg
-    write(1000, '(1000e15.7)') rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, &
-      (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg
+    # Write to file 1000
+    f1000 = open(outfile_storage)
+    f1000.write( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg )
+    f1000.close()
 
     # reading rainfall data
-    open( 11, file = rainfile, status = 'old' )
-
-    tt = 0
-    do
-     read(11, *, iostat = ios) t, nx_rain, ny_rain
-     for i = 1, ny_rain
-      read(11, *, iostat = ios) (rdummy, j = 1, nx_rain)
-     #enddo
-     if( ios.lt.0 ) exit
-     tt = tt + 1
-    #enddo
-    tt_max_rain = tt - 1
-
-    allocate( t_rain(0:tt_max_rain), qp(0:tt_max_rain, ny_rain, nx_rain), qp_t(ny, nx) )
-    rewind(11)
-
-    print( tt_max_rain, nx_rain, ny_rain
-
+    f11 = open(rainfile)
+    lines_list = f11.readlines()
+    t_rain[0], nx_rain, ny_rain = lines_list[0].split(" ")
+    tt_max_rain = (len(lines_list) / (nx_rain + 1)) - 1
+    print("tt_max_rain = %f" %(tt_max_rain))
+    t_rain = np.zeros(tt_max_rain)
+    qp = np.zeros((tt_max_rain, ny_rain, nx_rain))
+    qp_t = np.zeros((ny, nx))
+    print(tt_max_rain, nx_rain, ny_rain)
     qp = 0.0
     qp_t = 0.0 # added by T.Sayamaa on Dec 7, 2022 v1.4.2.7
-    for tt = 0, tt_max_rain
-     read(11, *) t_rain(tt), nx_rain, ny_rain
-     for i = 1, ny_rain
-      read(11, *) (qp(tt, i, j), j = 1, nx_rain)
-     #enddo
+    for tt in range( tt_max_rain ):
+        if ( tt % ( nx_rain + 1 ) == 0 ):
+            t_rain[tt], nx_rain, ny_rain = lines_list[i].split(" ")
+        else:
+            for i in range( ny_rain ):
+                qp[tt, i, j] = lines_list[i].split(" ")[j]
+            #enddo
+        #ENDIF
     #enddo
     # unit convert from (mm/h) to (m/s)
     qp = qp / 3600.0 / 1000.0
-
-    for j = 1, nx
-     rain_j(j) = int( (xllcorner + (dble(j) - 0.50) * cellsize - xllcorner_rain) / cellsize_rain_x ) + 1
+    for j in range( nx ):
+        rain_j[j] = int( (xllcorner + (dble[j] - 0.50) * cellsize - xllcorner_rain) / cellsize_rain_x ) + 1
     #enddo
-    for i = 1, ny
-     rain_i(i) = ny_rain - int( (yllcorner + (dble(ny) - dble(i) + 0.50) * cellsize - yllcorner_rain) / cellsize_rain_y )
+    for i in range( ny ):
+        rain_i[i] = ny_rain - int( (yllcorner + (dble[ny] - dble[i] + 0.50) * cellsize - yllcorner_rain) / cellsize_rain_y )
     #enddo
-    close(11)
+    f11.close()
 
-    print( "done: reading rain file"
+    print( "done: reading rain file" )
 
     # reading evp data
     if( evp_switch != 0 ):
-     open( 11, file = evpfile, status = 'old' )
-
-     tt = 0
-     do
-      read(11, *, iostat = ios) t, nx_evp, ny_evp
-      for i = 1, ny_evp
-       read(11, *, iostat = ios) (rdummy, j = 1, nx_evp)
-      #enddo
-      if( ios.lt.0 ) exit
-      tt = tt + 1
-     #enddo
-     tt_max_evp = tt - 1
-
-     allocate( t_evp(0:tt_max_evp), qe(0:tt_max_evp, ny_evp, nx_evp), qe_t(ny, nx) )
-     rewind(11)
-
-     print( "done: reading evp file"
-
-     qe = 0.0
-     for tt = 0, tt_max_evp
-      read(11, *) t_evp(tt), nx_evp, ny_evp
-      for i = 1, ny_evp
-       read(11, *) (qe(tt, i, j), j = 1, nx_evp)
-      #enddo
-     #enddo
-     # unit convert from (mm/h) to (m/s)
-     qe = qe / 3600.0 / 1000.0
-
-     for j = 1, nx
-      evp_j(j) = int( (xllcorner + (dble(j) - 0.50) * cellsize - xllcorner_evp) / cellsize_evp_x ) + 1
-     #enddo
-     for i = 1, ny
-      evp_i(i) = ny_evp - int( (yllcorner + (dble(ny) - dble(i) + 0.50) * cellsize - yllcorner_evp) / cellsize_evp_y )
-     #enddo
-     close(11)
+        f11 = open(evpfile)
+        lines_list = f11.readlines()
+        t_evp[0], nx_evp, ny_evp = lines_list[0].split(" ")
+        tt_max_evp = (len(lines_list) / ( nx_evp + 1 )) - 1
+        t_evp = np.zeros(tt_max_evp)
+        qe = np.zeros((tt_max_evp, ny_evp, nx_evp))
+        qe_t = np.zeros((ny, nx))
+        for tt in range( tt_max_evp ):
+            read(11, *) t_evp(tt), nx_evp, ny_evp
+            for i = 1, ny_evp
+                read(11, *) (qe(tt, i, j), j = 1, nx_evp)
+            #enddo
+        #enddo
+        # unit convert from (mm/h) to (m/s)
+        qe = qe / 3600.0 / 1000.0
+        for j in range( nx ):
+            evp_j[j] = int( (xllcorner + (dble[j] - 0.50) * cellsize - xllcorner_evp) / cellsize_evp_x ) + 1
+        #enddo
+        for i in range( ny ):
+            evp_i[i] = ny_evp - int( (yllcorner + (dble[ny] - dble[i] + 0.50) * cellsize - yllcorner_evp) / cellsize_evp_y )
+        #enddo
+        f11.close()
+        print( "done: reading evp file")
     #endif
 
     # For TSAS Output (Initial Condition)
@@ -681,7 +626,7 @@ def rri():
 
     for t = 1, maxt
 
-     if(mod(t, 1).eq.0) print( t, "/", maxt
+     if(mod(t, 1) == 0) print( t, "/", maxt
 
      #******* RIVER CALCULATION ******************************
      if( riv_thresh < 0 ) go to 2
@@ -779,7 +724,7 @@ def rri():
        ddt = max( ddt, ddt_min_riv ) # added on Jan 7, 2021
        ddt_chk_riv = ddt
        print( "shrink (riv): ", ddt, errmax, maxloc( vr_err )
-       if(ddt.eq.0) stop 'stepsize underflow'
+       if(ddt == 0) stop 'stepsize underflow'
        if(dam_switch == 1 ) dam_vol_temp[:] = 0.0
        go to 1
       else
@@ -805,7 +750,7 @@ def rri():
      call sub_riv_idx2ij( hr_idx, hr )
      call sub_riv_idx2ij( qr_ave_idx, qr_ave )
 
-     if( dam_switch.eq.1 ) call dam_checkstate(qr_ave)
+     if( dam_switch == 1 ) call dam_checkstate(qr_ave)
 
      #******* SLOPE CALCULATION ******************************
     2 continue
@@ -909,7 +854,7 @@ def rri():
        ddt = max( ddt, ddt_min_slo ) # added on Jan 7, 2021
        ddt_chk_slo = ddt
        print( "shrink (slo): ", ddt, errmax, maxloc( hs_err )
-       if(ddt.eq.0) stop 'stepsize underflow'
+       if(ddt == 0) stop 'stepsize underflow'
        go to 3
       else
        # "time + ddt" should be less than "t * dt"
@@ -1006,7 +951,7 @@ def rri():
        ddt = max( ddt, ddt_min_slo ) # added on Jan 7, 2021
        ddt_chk_slo = ddt
        print( "shrink (gw): ", ddt, errmax, maxloc( hg_err )
-       if(ddt.eq.0) stop 'stepsize underflow'
+       if(ddt == 0) stop 'stepsize underflow'
        go to 5
       else
        # "time + ddt" should be less than "t * dt"
@@ -1213,7 +1158,7 @@ def rri():
         i = riv_idx2i[k]
         j = riv_idx2j[k]
         kk = down_riv_idx[k]
-        if(k.eq.kk) continue
+        if(k == kk) continue
         ii = riv_idx2i[kk]
         jj = riv_idx2j[kk]
         if(dir(ii,jj) == -1):
@@ -1224,10 +1169,10 @@ def rri():
        for k = 1, slo_count
         i = slo_idx2i[k]
         j = slo_idx2j[k]
-        if(dir(i, j).eq.-1) continue
+        if(dir(i, j) == -1) continue
         for l = 1, lmax
          kk = down_slo_idx(l, k)
-         if(kk.le.0) continue
+         if(kk <= 0) continue
          ii = slo_idx2i[kk]
          jj = slo_idx2j[kk]
          if(dir(ii,jj) == -1):
@@ -1242,7 +1187,7 @@ def rri():
         if(dir(i,j) == -1):
          for l in range(1, lmax):
           kk = down_slo_idx[l, k]
-          if(kk.le.0):
+          if(kk <= 0):
             continue
           ii = slo_idx2i[kk]
           jj = slo_idx2j[kk]

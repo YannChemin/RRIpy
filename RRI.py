@@ -337,14 +337,14 @@ def rri():
     print( "num_of_cell : ", num_of_cell)
     print( "total area [km2] : ", num_of_cell * area / (10.0 ** 6.00))
 
-    # TODO river index setting
-    call riv_idx_setting
+    # river index setting
+    riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx = riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_len_switch)
 
     # TODO slope index setting
-    call slo_idx_setting
+    slo_idx2i, slo_idx2j, slo_ij2idx, down_slo_idx, domain_slo_idx, zb_slo_idx, dis_slo_idx, len_slo_idx, acc_slo_idx, down_slo_1d_idx, dis_slo_1d_idx, len_slo_1d_idx, land_idx, dif_slo_idx, ns_slo_idx, soildepth_idx, gammaa_idx, ksv_idx, faif_idx, infilt_limit_idx, ka_idx, gammam_idx, beta_idx, da_idx, dm_idx, ksg_idx, gammag_idx, kg0_idx, fpg_idx, rgl_idx = slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gammaa, ksv, faif, infilt_limit, ka, gammaa, beta, da, dm, ksg, gammag, kg0, fpg, rgl, eight_dir, dy, dx, direc )
 
     # TODO reading dam file
-    call dam_read
+    damflg, dam_qin, dam_num, dam_name, dam_kind, dam_ix, dam_iy, dam_vol, dam_vol_temp, dam_volmax, dam_state, dam_qout, dam_loc, dam_floodq, dam_maxfloodq, dam_rate = dam_read(riv_count, dam_switch, damfile)
 
     # initial condition
     hs = np.zeros((ny, nx))
@@ -366,71 +366,66 @@ def rri():
 
     # for slope cells
     # if init_slo_switch = 1 => read from file
-
     if(init_slo_switch == 1):
         inith = np.zeros((ny, nx))
-        open(13, file = initfile_slo, status = "old")
-     for i = 1, ny
-      read(13,*) (inith(i,j), j = 1, nx)
-     #enddo
-     where(inith <= 0.0) inith = 0.0
-     where(domain.eq.1 .and. inith >= 0.0) hs = inith
-     deallocate( inith )
-     close(13)
-
+        f13 = open(initfile_slo)
+        lines_list = f13.readlines()
+        for i in range( ny ):
+            for j in range( nx ):
+                inith[i,j] = lines_list[i].split(" ")[j]
+        #enddo
+        inith = np.where(inith <= 0.0, 0.0, inith)
+        hs = np.where(domain == 1 and inith >= 0.0, inith, hs)
+        del inith 
+        f13.close()
     #endif
 
     # for river cells
     # if init_riv_switch = 1 => read from file
-
     if(init_riv_switch == 1):
-
-     allocate( inith(ny, nx) )
-     inith = 0.0
-     open(13, file = initfile_riv, status = "old")
-     for i = 1, ny
-      read(13,*) (inith(i,j), j = 1, nx)
-     #enddo
-     where(inith <= 0.0) inith = 0.0
-     where(riv.eq.1 .and. inith >= 0.0) hr = inith
-     deallocate( inith )
-     close(13)
-
+        inith = np.zeros((ny, nx))
+        f13 = open(initfile_riv)
+        lines_list = f13.readlines()
+        for i in range( ny ):
+            for j in range ( nx ):
+                inith[i,j] = lines_list[i].split(" ")[j]
+        #enddo
+        inith = np.where(inith <= 0.0, 0.0, inith)
+        hr = np.where(riv == 1 and inith >= 0.0, inith, hr)
+        del inith 
+        f13.close()
     #endif
 
     # for slope cells
     # if init_gw_switch = 1 => read from file
-
     if(init_gw_switch == 1):
-
-     allocate( inith(ny, nx) )
-     inith = 0.0
-     open(13, file = initfile_gw, status = "old")
-     for i = 1, ny
-      read(13,*) (inith(i,j), j = 1, nx)
-     #enddo
-     where(inith <= 0.0) inith = 0.0
-     where(domain.eq.1 .and. inith >= 0.0) hg = inith
-     deallocate( inith )
-     close(13)
-
+        inith = np.zeros((ny, nx))
+        f13 = open(initfile_gw)
+        lines_list = f13.readlines()
+        for i in range( ny ):
+            for j in range ( nx ):
+                inith[i,j] = lines_list[i].split(" ")[j]
+        #enddo
+        inith = np.where(inith <= 0.0, 0.0, inith)
+        hg = np.where(domain == 1 and inith >= 0.0, inith, hg)
+        del inith
+        f13.close()
     #endif
 
     # if init_gampt_ff_switch = 1 => read from file
 
     if(init_gampt_ff_switch == 1):
-
-     allocate( inith(ny, nx) )
-     inith = 0.0
-     open(13, file = initfile_gampt_ff, status = "old")
-     for i = 1, ny
-      read(13,*) (inith(i,j), j = 1, nx)
-     #enddo
-     where(inith <= 0.0) inith = 0.0
-     where(domain.eq.1) gampt_ff = inith
-     deallocate( inith )
-     close(13)
-
+        inith = np.zeros((ny, nx))
+        f13 = open(initfile_gampt_ff)
+        lines_list = f13.readlines()
+        for i in range( ny ):
+            for j in range ( nx ):
+                inith[i,j] = lines_list[i].split(" ")[j]
+        #enddo
+        inith = np.where(inith <= 0.0, 0.0, inith)
+        gampt_ff = np.where(domain == 1, inith, gampt_ff)
+        del inith 
+        f13.close()
     #endif
 
     # boundary conditions

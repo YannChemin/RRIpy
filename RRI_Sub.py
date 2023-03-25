@@ -1,15 +1,41 @@
 # RRI_Sub
 
 # river index setting
-def riv_idx_setting():
+def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_len_switch):
     """
     River index setting
-    """
-    #use globals
-    #implicit none
-    #integer i, j, ii, jj, k, kk # add v1.4(k, kk)
-    #real(8) distance
 
+    :param ny:
+    :param nx:
+    :param domain:
+    :param riv:
+    :param width:
+    :param depth:
+    :param height:
+    :param area_ratio:
+    :param zb_riv:
+    :param dif:
+    :param land:
+    :param sec_map:
+    :param len_riv:
+    :param direc:
+    :param sec_len_switch:
+
+    :return: riv_idx2i
+    :return: riv_idx2j
+    :return: riv_ij2idx
+    :return: down_riv_idx
+    :return: domain_riv_idx
+    :return: width_idx
+    :return: depth_idx
+    :return: height_idx
+    :return: area_ratio_idx
+    :return: zb_riv_idx
+    :return: dis_riv_idx
+    :return: dif_riv_idx
+    :return: sec_map_idx
+    :return: len_riv_idx
+    """
     riv_count = 0
     for i in range(ny):
         for j in range (nx):
@@ -27,7 +53,6 @@ def riv_idx_setting():
 
     width_idx = np.zeros(riv_count)
     depth_idx = np.zeros(riv_count)
-
     height_idx = np.zeros(riv_count)
     area_ratio_idx = np.zeros(riv_count)
 
@@ -147,6 +172,8 @@ def riv_idx_setting():
         #enddo
     #endif
 
+    return(riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx)
+
 #end def riv_idx_setting
 
 
@@ -194,15 +221,71 @@ def sub_riv_idx2ij( a_idx, a ):
 #end def sub_riv_idx2ij
 
 
-def slo_idx_setting
+def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gammaa, ksv, faif, infilt_limit, ka, gammaa, beta, da, dm, ksg, gammag, kg0, fpg, rgl, eight_dir, dy, dx, direc ):
     """
     Slope index setting
 
+    :param ny:
+    :param nx:
+    :param domain:
+    :param zb:
+    :param acc:
+    :param land:
+    :param dif:
+    :param ns_slope:
+    :param soildepth:
+    :param gammaaa:
+    :param ksv:
+    :param faif:
+    :param infilt_limit:
+    :param ka:
+    :param gammam:
+    :param beta:
+    :param da:
+    :param dm:
+    :param ksg:
+    :param gammag:
+    :param kg0:
+    :param fpg:
+    :param rgl:
+    :param eight_dir: switch 0=4directions 1=8directions
+    :param dy:
+    :param dx:
+    :param direc:
 
+    :return: slo_idx2i
+    :return: slo_idx2j
+    :return: slo_ij2idx
+    :return: down_slo_idx
+    :return: domain_slo_idx
+    :return: zb_slo_idx
+    :return: dis_slo_idx
+    :return: len_slo_idx
+    :return: acc_slo_idx
+    :return: down_slo_1d_idx
+    :return: dis_slo_1d_idx
+    :return: len_slo_1d_idx
+    :return: land_idx
+    :return: dif_slo_idx
+    :return: ns_slo_idx
+    :return: soildepth_idx
+    :return: gammaa_idx
+    :return: ksv_idx
+    :return: faif_idx
+    :return: infilt_limit_idx
+    :return: ka_idx
+    :return: gammam_idx
+    :return: beta_idx
+    :return: da_idx
+    :return: dm_idx
+    :return: ksg_idx
+    :return: gammag_idx
+    :return: kg0_idx
+    :return: fpg_idx
+    :return: rgl_idx
     """
     #real(8) distance, len, l1, l2, l3
     #real(8) l1_kin, l2_kin, l3_kin
-
     slo_count = 0
     for i in range( ny ):
         for j in range( nx ):
@@ -423,25 +506,26 @@ def slo_idx_setting
                 length = l1_kin
             else:
                 raise Exception ("dir(%d, %d) error %d %d" %( i, j, direc[i, j])
-        #endif
+            #endif
 
-        if( ii > ny ):
-            continue
-        if( jj > nx ):
-            continue
-        if( ii < 0 ):
-            continue
-        if( jj < 0 ):
-            continue
-        if( domain[ii,jj] == 0 ): 
-            continue
+            if( ii > ny ):
+                continue
+            if( jj > nx ):
+                continue
+            if( ii < 0 ):
+                continue
+            if( jj < 0 ):
+                continue
+            if( domain[ii,jj] == 0 ): 
+                continue
 
-        down_slo_1d_idx[slo_count] = slo_ij2idx[ii, jj]
-        dis_slo_1d_idx[slo_count] = distance
-        len_slo_1d_idx[slo_count] = length
-
+            down_slo_1d_idx[slo_count] = slo_ij2idx[ii, jj]
+            dis_slo_1d_idx[slo_count] = distance
+            len_slo_1d_idx[slo_count] = length
+        #enddo
     #enddo
-#enddo
+
+    return(slo_idx2i, slo_idx2j, slo_ij2idx, down_slo_idx, domain_slo_idx, zb_slo_idx, dis_slo_idx, len_slo_idx, acc_slo_idx, down_slo_1d_idx, dis_slo_1d_idx, len_slo_1d_idx, land_idx, dif_slo_idx, ns_slo_idx, soildepth_idx, gammaa_idx, ksv_idx, faif_idx, infilt_limit_idx, ka_idx, gammam_idx, beta_idx, da_idx, dm_idx, ksg_idx, gammag_idx, kg0_idx, fpg_idx, rgl_idx)
 
 #end def slo_idx_setting
 

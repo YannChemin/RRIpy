@@ -673,88 +673,92 @@ def rri():
                     #enddo
                 #endif
 
-    1 continue
-      qr_ave_temp_idx[:] = 0.0
+                #1 continue
+                while( errmax > 1.0 and ddt > ddt_min_riv): # modified on Jan 7, 2021
+                    # try smaller ddt
+                    ddt = np.max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
+                    ddt = np.max( ddt, ddt_min_riv ) # added on Jan 7, 2021
+                    ddt_chk_riv = ddt
+                    print( "shrink (riv): %f, %f, %f" % (ddt, errmax, maxloc( vr_err ))
+                    if(ddt == 0):
+                        raise Exception ('stepsize underflow')
+                    if(dam_switch == 1 ):
+                        dam_vol_temp[:] = 0.0
+                    #go to 1
+                    qr_ave_temp_idx[:] = 0.0
 
-      # Adaptive Runge-Kutta 
-      # (1)
-      call funcr( vr_idx, fr, qr_idx )
-      vr_temp = vr_idx + b21 * ddt * fr
-      where(vr_temp < 0) vr_temp = 0.0
-      qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
+                    # Adaptive Runge-Kutta 
+                    # (1)
+                    call funcr( vr_idx, fr, qr_idx )
+                    vr_temp = vr_idx + b21 * ddt * fr
+                    where(vr_temp < 0) vr_temp = 0.0
+                    qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
-      # (2)
-      call funcr( vr_temp, kr2, qr_idx )
-      vr_temp = vr_idx + ddt * (b31 * fr + b32 * kr2)
-      where(vr_temp < 0) vr_temp = 0.0
-      qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
+                    # (2)
+                    call funcr( vr_temp, kr2, qr_idx )
+                    vr_temp = vr_idx + ddt * (b31 * fr + b32 * kr2)
+                    where(vr_temp < 0) vr_temp = 0.0
+                    qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
-      # (3)
-      call funcr( vr_temp, kr3, qr_idx )
-      vr_temp = vr_idx + ddt * (b41 * fr + b42 * kr2 + b43 * kr3)
-      where(vr_temp < 0) vr_temp = 0.0
-      qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
+                    # (3)
+                    call funcr( vr_temp, kr3, qr_idx )
+                    vr_temp = vr_idx + ddt * (b41 * fr + b42 * kr2 + b43 * kr3)
+                    where(vr_temp < 0) vr_temp = 0.0
+                    qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
-      # (4)
-      call funcr( vr_temp, kr4, qr_idx )
-      vr_temp = vr_idx + ddt * (b51 * fr + b52 * kr2 + b53 * kr3 + b54 * kr4)
-      where(vr_temp < 0) vr_temp = 0.0
-      qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
+                    # (4)
+                    call funcr( vr_temp, kr4, qr_idx )
+                    vr_temp = vr_idx + ddt * (b51 * fr + b52 * kr2 + b53 * kr3 + b54 * kr4)
+                    where(vr_temp < 0) vr_temp = 0.0
+                    qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
-      # (5)
-      call funcr( vr_temp, kr5, qr_idx )
-      vr_temp = vr_idx + ddt * (b61 * fr + b62 * kr2 + b63 * kr3 + b64 * kr4 + b65 * kr5)
-      where(vr_temp < 0) vr_temp = 0.0
-      qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
+                    # (5)
+                    call funcr( vr_temp, kr5, qr_idx )
+                    vr_temp = vr_idx + ddt * (b61 * fr + b62 * kr2 + b63 * kr3 + b64 * kr4 + b65 * kr5)
+                    where(vr_temp < 0) vr_temp = 0.0
+                    qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
-      # (6)
-      call funcr( vr_temp, kr6, qr_idx )
-      vr_temp = vr_idx + ddt * (c1 * fr + c3 * kr3 + c4 * kr4 + c6 * kr6)
-      where(vr_temp < 0) vr_temp = 0.0
-      qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
+                    # (6)
+                    call funcr( vr_temp, kr6, qr_idx )
+                    vr_temp = vr_idx + ddt * (c1 * fr + c3 * kr3 + c4 * kr4 + c6 * kr6)
+                    where(vr_temp < 0) vr_temp = 0.0
+                    qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
-      # (e)
-      vr_err = ddt * (dc1 * fr + dc3 * kr3 + dc4 * kr4 + dc5 * kr5 + dc6 * kr6)
+                    # (e)
+                    vr_err = ddt * (dc1 * fr + dc3 * kr3 + dc4 * kr4 + dc5 * kr5 + dc6 * kr6)
 
-      hr_err[:] = vr_err[:] / (area * area_ratio_idx[:])
+                    hr_err[:] = vr_err[:] / (area * area_ratio_idx[:])
 
-      # error evaluation
-      where( domain_riv_idx == 0 ) hr_err = 0
-      errmax = maxval( hr_err ) / eps
-      #if(errmax.gt.1.0 .and. ddt >= ddt_min_riv):
-      if(errmax.gt.1.0 .and. ddt > ddt_min_riv): # modified on Jan 7, 2021
-       # try smaller ddt
-       ddt = max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
-       ddt = max( ddt, ddt_min_riv ) # added on Jan 7, 2021
-       ddt_chk_riv = ddt
-       print( "shrink (riv): ", ddt, errmax, maxloc( vr_err )
-       if(ddt == 0) stop 'stepsize underflow'
-       if(dam_switch == 1 ) dam_vol_temp[:] = 0.0
-       go to 1
-      else
-       # modified on Jan 7, 2021
-       if(ddt == ddt_min_riv):
-        call funcr( vr_temp, kr6, qr_idx )
-        qr_ave_temp_idx = qr_idx * ddt * 6.0
-       #endif
-       if(time + ddt > t * dt ) ddt = t * dt - time
-       time = time + ddt
-       vr_idx = vr_temp
-       qr_ave_idx = qr_ave_idx + qr_ave_temp_idx
-      #endif
-      if(time.ge.t * dt) exit # finish for this timestep
-     #enddo --------------************
-     qr_ave_idx = qr_ave_idx / float(dt) / 6.0
+                    # error evaluation
+                    where( domain_riv_idx == 0 ) hr_err = 0
+                    errmax = maxval( hr_err ) / eps
+                #else
+                # modified on Jan 7, 2021
+                if(ddt == ddt_min_riv):
+                    call funcr( vr_temp, kr6, qr_idx )
+                    qr_ave_temp_idx = qr_idx * ddt * 6.0
+                #endif
+                if(time + ddt > t * dt ):
+                    ddt = t * dt - time
+                time = time + ddt
+                vr_idx = vr_temp
+                qr_ave_idx = qr_ave_idx + qr_ave_temp_idx
+                #endif
+                if(time.ge.t * dt):
+                    break # finish for this timestep
+            #enddo --------------************
+            qr_ave_idx = qr_ave_idx / float(dt) / 6.0
 
-     for k = 1, riv_count
-      call vr2hr(vr_idx[k], k, hr_idx[k])
-     #enddo
+            for k in range( riv_count ):
+                call vr2hr(vr_idx[k], k, hr_idx[k])
+            #enddo
 
-     # hr_idx -> hr, qr_ave_idx -> qr_ave
-     call sub_riv_idx2ij( hr_idx, hr )
-     call sub_riv_idx2ij( qr_ave_idx, qr_ave )
+            # hr_idx -> hr, qr_ave_idx -> qr_ave
+            call sub_riv_idx2ij( hr_idx, hr )
+            call sub_riv_idx2ij( qr_ave_idx, qr_ave )
 
-     if( dam_switch == 1 ) call dam_checkstate(qr_ave)
+            if( dam_switch == 1 ):
+                call dam_checkstate(qr_ave)
 
      #******* SLOPE CALCULATION ******************************
     2 continue

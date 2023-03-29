@@ -186,7 +186,7 @@ def dam_checkstate(dam_num, dam_vol_temp, dam_vol, dam_state, dam_vol_max):
     :param dam_state:
     :param dam_vol_max:
 
-    :return: dam_state
+    :return: dam_state (0 or 1)
     """
     for i in range( dam_num ):
         dam_vol_temp[i] = dam_vol_temp[i] / 6.0

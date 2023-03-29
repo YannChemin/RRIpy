@@ -318,7 +318,7 @@ def rri():
     # domain setting
     # domain = 0 : outside the domain
     # domain = 1 : inside the domain
-    # domain = 2 : outlet point (where dir(i,j) = 0 or dir(i,j) = -1),
+    # domain = 2 : outlet point (where dir[i,j] = 0 or dir[i,j] = -1),
     #              and cells located at edges
     domain = 0
     num_of_cell = 0
@@ -749,15 +749,15 @@ def rri():
             qr_ave_idx = qr_ave_idx / float(dt) / 6.0
 
             for k in range( riv_count ):
-                call vr2hr(vr_idx[k], k, hr_idx[k])
+                hr_idx[k] = vr2hr(vr_idx[k], k)
             #enddo
 
             # hr_idx -> hr, qr_ave_idx -> qr_ave
-            call sub_riv_idx2ij( hr_idx, hr )
-            call sub_riv_idx2ij( qr_ave_idx, qr_ave )
+            hr = sub_riv_idx2ij( hr_idx )
+            qr_ave = sub_riv_idx2ij( qr_ave_idx )
 
             if( dam_switch == 1 ):
-                call dam_checkstate(qr_ave)
+                qr_ave = dam_checkstate(dam_num, dam_vol_temp, dam_vol, dam_state, dam_vol_max)
 
         #******* SLOPE CALCULATION ******************************
         #2 continue
@@ -774,46 +774,53 @@ def rri():
             # hs -> hs_idx
             # Memo: slo_ij2idx must be here. 
             # hs_idx cannot be replaced within the following for loop.
-            call sub_slo_ij2idx( hs, hs_idx )
-            call sub_slo_ij2idx( gampt_ff, gampt_ff_idx ) # modified by T.Sayama on June 10, 2017
+            hs_idx = sub_slo_ij2idx( hs )
+            gampt_ff_idx = sub_slo_ij2idx( gampt_ff ) # modified by T.Sayama on June 10, 2017
 
-            while> #do
-                if(time + ddt > t * dt ) ddt = t * dt - time
+            while (time < t * dt): #do
+                if(time + ddt > t * dt ):
+                    ddt = t * dt - time
                 # rainfall
                 itemp = -1
-                for jtemp = 1, tt_max_rain
-                    if( t_rain(jtemp-1) < (time + ddt) .and. (time + ddt) <= t_rain(jtemp) ) itemp = jtemp
+                for jtemp in range( tt_max_rain ):
+                    if( t_rain(jtemp-1) < (time + ddt) and (time + ddt) <= t_rain(jtemp) ):
+                        itemp = jtemp
                 #enddo
-                for i = 1, ny
-                    if(rain_i(i) < 1 .or. rain_i(i) > ny_rain ) continue
-                    for j = 1, nx
-                        if(rain_j(j) < 1 .or. rain_j(j) > nx_rain ) continue
-                        qp_t(i, j) = qp(itemp, rain_i(i), rain_j(j))
+                for i in range( ny ):
+                    if(rain_i[i] < 1 or rain_i[i] > ny_rain ):
+                        continue
+                    for j in range( nx ):
+                        if(rain_j[j] < 1 or rain_j[j] > nx_rain ):
+                            continue
+                        qp_t[i,j] = qp(itemp, rain_i[i], rain_j[j])
                     #enddo
                 #enddo
-                call sub_slo_ij2idx( qp_t, qp_t_idx )
+                qp_t_idx = sub_slo_ij2idx( qp_t )
                 # boundary condition for slope (water depth boundary)
                 if( bound_slo_wlev_switch >= 1 ):
                     itemp = -1
-                    for jtemp = 1, tt_max_bound_slo_wlev
-                        if( t_bound_slo_wlev(jtemp-1) < (time + ddt) .and. (time + ddt) <= t_bound_slo_wlev(jtemp) ) itemp = jtemp
+                    for jtemp in rnage( tt_max_bound_slo_wlev ):
+                        if( t_bound_slo_wlev(jtemp-1) < (time + ddt) and (time + ddt) <= t_bound_slo_wlev(jtemp) ):
+                            itemp = jtemp
                     #enddo
-                    for k = 1, slo_count
-                        if( bound_slo_wlev_idx(itemp, k) <= -100.0 ) continue # not boundary
+                    for k in range( slo_count ):
+                        if( bound_slo_wlev_idx(itemp, k) <= -100.0 ):
+                            continue # not boundary
                         hs_idx[k] = bound_slo_wlev_idx(itemp, k)
                     #enddo
                 #endif
                 #3 continue
-                #if(errmax.gt.1.0 .and. ddt >= ddt_min_slo):
-                while (errmax.gt.1.0 .and. ddt > ddt_min_slo): # modified on Jan 7, 2021
+                #if(errmax > 1.0 and ddt >= ddt_min_slo):
+                while (errmax > 1.0 and ddt > ddt_min_slo): # modified on Jan 7, 2021
                     # try smaller ddt
                     ddt = max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
                     ddt = max( ddt, ddt_min_slo ) # added on Jan 7, 2021
                     ddt_chk_slo = ddt
-                    print( "shrink (slo): ", ddt, errmax, maxloc( hs_err )
-                    if(ddt == 0) stop 'stepsize underflow'
+                    print( "shrink (slo): ", ddt, errmax, maxloc( hs_err ))
+                    if(ddt == 0):
+                        raise Exception ('stepsize underflow')
                     #go to 3
-                    qs_ave_temp_idx[:,:] = 0.0
+                    qs_ave_temp_idx.fill(0.0)
                     # Adaptive Runge-Kutta 
                     # (1)
                     call funcs( hs_idx, qp_t_idx, fs, qs_idx )
@@ -861,10 +868,9 @@ def rri():
                 # cumulative rainfall
                 for i = 1, ny
                     for j = 1, nx
-                        if( domain(i,j) != 0 ) rain_sum = rain_sum + float(qp_t(i, j) * area * ddt)
+                        if( domain[i,j] != 0 ) rain_sum = rain_sum + float(qp_t[i,j] * area * ddt)
                     #enddo
                 #enddo
-                if(time.ge.t * dt) exit # finish for this timestep
             #enddo
         qs_ave_idx = qs_ave_idx / float(dt) / 6.0 # modified on ver 1.4.1
 
@@ -1104,41 +1110,69 @@ def rri():
             if(outswitch_gv == 2) open( 107, file = ofile_gv, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
             if(outswitch_gampt_ff == 2) open( 108, file = ofile_gampt_ff, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
 
-            # output (ascii)
-            for i = 1, ny
-                if(outswitch_hs == 1) write(100,'(10000f14.5)') (hs(i, j), j = 1, nx)
-                if(outswitch_hr == 1) write(101,'(10000f14.5)') (hr(i, j), j = 1, nx)
-                #if(outswitch_hr == 1) write(101,'(10000f14.5)') ((hr(i, j) + zb_riv(i, j)), j = 1, nx)
-                if(outswitch_hg == 1) write(102,'(10000f14.5)') (hg(i, j), j = 1, nx)
-                if(outswitch_qr == 1) write(103,'(10000f14.5)') ((qr_ave(i,j)), j = 1, nx) # [m3/s]
-                if(outswitch_qu == 1) write(104,'(10000f14.5)') (((qs_ave(1, i, j) + (qs_ave(3, i, j) - qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-                #if(outswitch_qv == 1) write(105,'(10000f14.5)') (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-                if(outswitch_qv == 1) write(105,'(10000e14.5)') (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-                if(outswitch_gu == 1) write(106,'(10000f14.8)') (((qg_ave(1, i, j) + (qg_ave(3, i, j) - qg_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-                if(outswitch_gv == 1) write(107,'(10000f14.5)') (((qg_ave(2, i, j) + (qg_ave(3, i, j) + qg_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-                if(outswitch_gampt_ff == 1) write(108,'(10000f14.5)') (gampt_ff(i, j), j = 1, nx)
+            # TODO output (ascii)
+            if(outswitch_hs == 1):
+                f100.write(hs)
+            if(outswitch_hr == 1):
+                f101.write(hr)
+            #if(outswitch_hr == 1):
+                #f101.write(hr + zb_riv)
+            if(outswitch_hg == 1):
+                f102.write(hg)
+            if(outswitch_qr == 1):
+                f103.write(qr_ave) # [m3/s]
+            if(outswitch_qu == 1):
+                f104.write((qs_ave[1,i,j] + (qs_ave[3,i,j] - qs_ave[4,i,j]) / 2.0) * area)
+            #if(outswitch_qv == 1):
+                #f105.write((qs_ave[2,i,j] + (qs_ave[3,i,j] + qs_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_qv == 1):
+                f105.write((qs_ave[2,i,j] + (qs_ave[3,i,j] + qs_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_gu == 1):
+                f106.write((qg_ave[1,i,j] + (qg_ave[3,i,j] - qg_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_gv == 1):
+                f107.write((qg_ave[2,i,j] + (qg_ave[3,i,j] + qg_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_gampt_ff == 1):
+                f108.write(gampt_ff)
             #enddo
 
-            # output (binary)
-            if(outswitch_hs == 2) write(100,rec=1) ((hs(i,j), j = 1, nx), i = ny, 1, -1)
-            if(outswitch_hr == 2) write(101,rec=1) ((hr(i,j), j = 1, nx), i = ny, 1, -1)
-            if(outswitch_hg == 2) write(102,rec=1) ((hg(i,j), j = 1, nx), i = ny, 1, -1)
-            if(outswitch_qr == 2) write(103,rec=1) ((qr_ave(i,j), j = 1, nx), i = ny, 1, -1) # [m3/s]
-            if(outswitch_qu == 2) write(104,rec=1) (((qs_ave(1, i, j) + (qs_ave(3, i, j) - qs_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-            if(outswitch_qv == 2) write(105,rec=1) (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-            if(outswitch_gu == 2) write(106,rec=1) (((qg_ave(1, i, j) + (qg_ave(3, i, j) - qg_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-            if(outswitch_gv == 2) write(107,rec=1) (((qg_ave(2, i, j) + (qg_ave(3, i, j) + qg_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-            if(outswitch_gampt_ff == 2) write(108,rec=1) ((gampt_ff(i,j), j = 1, nx), i = ny, 1, -1)
+            # TODO output (binary)
+            if(outswitch_hs == 2):
+                f100.write(hs)
+            if(outswitch_hr == 2):
+                f101.write(hr)
+            if(outswitch_hg == 2):
+                f102.write(hg)
+            if(outswitch_qr == 2):
+                f103.write(qr_ave) # [m3/s]
+            if(outswitch_qu == 2):
+                f104.write((qs_ave[1,i,j] + (qs_ave[3,i,j] - qs_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_qv == 2):
+                f105.write((qs_ave[2,i,j] + (qs_ave[3,i,j] + qs_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_gu == 2):
+                f106.write((qg_ave[1,i,j] + (qg_ave[3,i,j] - qg_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_gv == 2):
+                f107.write((qg_ave[2,i,j] + (qg_ave[3,i,j] + qg_ave[4,i,j]) / 2.0) * area)
+            if(outswitch_gampt_ff == 2):
+                f108.write(gampt_ff)
 
-            if(outswitch_hs != 0) close(100)
-            if(outswitch_hr != 0) close(101)
-            if(outswitch_hg != 0) close(102)
-            if(outswitch_qr != 0) close(103)
-            if(outswitch_qu != 0) close(104)
-            if(outswitch_qv != 0) close(105)
-            if(outswitch_gu != 0) close(106)
-            if(outswitch_gv != 0) close(107)
-            if(outswitch_gampt_ff != 0) close(108)
+            if(outswitch_hs != 0): 
+                f100.close()
+            if(outswitch_hr != 0): 
+                f101.close()
+            if(outswitch_hg != 0): 
+                f102.close()
+            if(outswitch_qr != 0): 
+                f103.close()
+            if(outswitch_qu != 0): 
+                f104.close()
+            if(outswitch_qv != 0): 
+                f105.close()
+            if(outswitch_gu != 0): 
+                f106.close()
+            if(outswitch_gv != 0): 
+                f107.close()
+            if(outswitch_gampt_ff != 0):
+                f108.close()
 
             if( tec_switch == 1 ):
                 if (tt == 1):
@@ -1154,10 +1188,11 @@ def rri():
             #call dt_check_slo(hs_idx, tt, ddt_chk_slo)
 
             if( dam_switch == 1 ):
-                if( tt == 1 ) open(1001, file = "./out/dam_out.txt")
+                if( tt == 1 ):
+                    f1001.open("./out/dam_out.txt")
                 call dam_write
                 if(t == maxt ):
-                    open(1002, file = "./out/damcnt_out.txt")
+                    f1002.open("./out/damcnt_out.txt")
                     call dam_write_cnt
                 #endif
             #endif
@@ -1167,11 +1202,11 @@ def rri():
             for k = 1, riv_count
                 i = riv_idx2i[k]
                 j = riv_idx2j[k]
-                if(dir(i, j) == -1) itemp = 1
+                if(dir[i,j] == -1) itemp = 1
             #enddo
 
             if( itemp == 1):
-                ofile_ro = './out/ro_' // trim(t_char) // ".out"
+                ofile_ro = './out/ro_' + trim(t_char) + ".out"
                 open(111, file = ofile_ro)
                 for k = 1, riv_count
                     i = riv_idx2i[k]
@@ -1180,21 +1215,21 @@ def rri():
                     if(k == kk) continue
                     ii = riv_idx2i[kk]
                     jj = riv_idx2j[kk]
-                    if(dir(ii,jj) == -1):
-                        write(111,'(5i6, 10000f14.5)') 1, i, j, ii, jj, qr_ave_idx[k]
+                    if(dir[ii,jj] == -1):
+                        f111.write(1, i, j, ii, jj, qr_ave_idx[k])
                     #endif
                 #enddo
             for k = 1, slo_count
                 i = slo_idx2i[k]
                 j = slo_idx2j[k]
-                if(dir(i, j) == -1) continue
+                if(dir[i,j] == -1) continue
                 for l = 1, lmax
                     kk = down_slo_idx(l, k)
                     if(kk <= 0) continue
                     ii = slo_idx2i[kk]
                     jj = slo_idx2j[kk]
-                    if(dir(ii,jj) == -1):
-                        write(111,'(5i6, 10000f14.5)') 2, i, j, ii, jj, qs_ave(l, i, j) * area
+                    if(dir[ii,jj] == -1):
+                        f111.write(2, i, j, ii, jj, qs_ave[l,i,j] * area)
                     #endif
                 #enddo
             #enddo
@@ -1202,16 +1237,16 @@ def rri():
             for k = 1, slo_count
                 i = slo_idx2i[k]
                 j = slo_idx2j[k]
-                if(dir(i,j) == -1):
+                if(dir[i,j] == -1):
                     for l in range(1, lmax):
                         kk = down_slo_idx[l, k]
                         if(kk <= 0):
                             continue
                         ii = slo_idx2i[kk]
                         jj = slo_idx2j[kk]
-                        if(domain(ii, jj) != 1):
+                        if(domain[ii,jj] != 1):
                             continue
-                        f111.write( 3, ii, jj, i, j, -1.0 * qs_ave(l, ii, jj) * area
+                        f111.write( 3, ii, jj, i, j, -1.0 * qs_ave[l,ii,jj] * area
                     #enddo
                 #endif
             #enddo
@@ -1220,7 +1255,7 @@ def rri():
             for k in range(1, slo_count):
                 i = slo_idx2i[k]
                 j = slo_idx2j[k]
-                if(dir(i,j) == -1):
+                if(dir[i,j] == -1):
                     f111.write( 4, i, j, i, j, qp_t_idx[k] * area)
                 #endif
             #enddo

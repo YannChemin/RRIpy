@@ -760,478 +760,475 @@ def rri():
             if( dam_switch == 1 ):
                 call dam_checkstate(qr_ave)
 
-     #******* SLOPE CALCULATION ******************************
-    2 continue
+        #******* SLOPE CALCULATION ******************************
+        #2 continue
+        else:
+            # from time = (t - 1) * dt to t * dt
+            time = (t - 1) * dt  # (current time)
+            # time step is initially set to be "dt"
+            ddt = dt
+            ddt_chk_slo = dt
 
-     # from time = (t - 1) * dt to t * dt
-     time = (t - 1) * dt  # (current time)
-     # time step is initially set to be "dt"
-     ddt = dt
-     ddt_chk_slo = dt
+            qs_ave = 0.0
+            qs_ave_idx = 0.0
 
-     qs_ave = 0.0
-     qs_ave_idx = 0.0
+            # hs -> hs_idx
+            # Memo: slo_ij2idx must be here. 
+            # hs_idx cannot be replaced within the following for loop.
+            call sub_slo_ij2idx( hs, hs_idx )
+            call sub_slo_ij2idx( gampt_ff, gampt_ff_idx ) # modified by T.Sayama on June 10, 2017
 
-     # hs -> hs_idx
-     # Memo: slo_ij2idx must be here. 
-     # hs_idx cannot be replaced within the following for loop.
-     call sub_slo_ij2idx( hs, hs_idx )
-     call sub_slo_ij2idx( gampt_ff, gampt_ff_idx ) # modified by T.Sayama on June 10, 2017
+            while> #do
+                if(time + ddt > t * dt ) ddt = t * dt - time
+                # rainfall
+                itemp = -1
+                for jtemp = 1, tt_max_rain
+                    if( t_rain(jtemp-1) < (time + ddt) .and. (time + ddt) <= t_rain(jtemp) ) itemp = jtemp
+                #enddo
+                for i = 1, ny
+                    if(rain_i(i) < 1 .or. rain_i(i) > ny_rain ) continue
+                    for j = 1, nx
+                        if(rain_j(j) < 1 .or. rain_j(j) > nx_rain ) continue
+                        qp_t(i, j) = qp(itemp, rain_i(i), rain_j(j))
+                    #enddo
+                #enddo
+                call sub_slo_ij2idx( qp_t, qp_t_idx )
+                # boundary condition for slope (water depth boundary)
+                if( bound_slo_wlev_switch >= 1 ):
+                    itemp = -1
+                    for jtemp = 1, tt_max_bound_slo_wlev
+                        if( t_bound_slo_wlev(jtemp-1) < (time + ddt) .and. (time + ddt) <= t_bound_slo_wlev(jtemp) ) itemp = jtemp
+                    #enddo
+                    for k = 1, slo_count
+                        if( bound_slo_wlev_idx(itemp, k) <= -100.0 ) continue # not boundary
+                        hs_idx[k] = bound_slo_wlev_idx(itemp, k)
+                    #enddo
+                #endif
+                #3 continue
+                #if(errmax.gt.1.0 .and. ddt >= ddt_min_slo):
+                while (errmax.gt.1.0 .and. ddt > ddt_min_slo): # modified on Jan 7, 2021
+                    # try smaller ddt
+                    ddt = max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
+                    ddt = max( ddt, ddt_min_slo ) # added on Jan 7, 2021
+                    ddt_chk_slo = ddt
+                    print( "shrink (slo): ", ddt, errmax, maxloc( hs_err )
+                    if(ddt == 0) stop 'stepsize underflow'
+                    #go to 3
+                    qs_ave_temp_idx[:,:] = 0.0
+                    # Adaptive Runge-Kutta 
+                    # (1)
+                    call funcs( hs_idx, qp_t_idx, fs, qs_idx )
+                    hs_temp = hs_idx + b21 * ddt * fs
+                    where(hs_temp < 0) hs_temp = 0.0
+                    qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (2)
+                    call funcs( hs_temp, qp_t_idx, ks2, qs_idx )
+                    hs_temp = hs_idx + ddt * (b31 * fs + b32 * ks2)
+                    where(hs_temp < 0) hs_temp = 0.0
+                    qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (3)
+                    call funcs( hs_temp, qp_t_idx, ks3, qs_idx )
+                    hs_temp = hs_idx + ddt * (b41 * fs + b42 * ks2 + b43 * ks3)
+                    where(hs_temp < 0) hs_temp = 0.0
+                    qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (4)
+                    call funcs( hs_temp, qp_t_idx, ks4, qs_idx )
+                    hs_temp = hs_idx + ddt * (b51 * fs + b52 * ks2 + b53 * ks3 + b54 * ks4)
+                    where(hs_temp < 0) hs_temp = 0.0
+                    qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (5)
+                    call funcs( hs_temp, qp_t_idx, ks5, qs_idx )
+                    hs_temp = hs_idx + ddt * (b61 * fs + b62 * ks2 + b63 * ks3 + b64 * ks4 + b65 * ks5)
+                    where(hs_temp < 0) hs_temp = 0.0
+                    qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (6)
+                    call funcs( hs_temp, qp_t_idx, ks6, qs_idx )
+                    hs_temp = hs_idx + ddt * (c1 * fs + c3 * ks3 + c4 * ks4 + c6 * ks6)
+                    where(hs_temp < 0) hs_temp = 0.0
+                    qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (e)
+                    hs_err = ddt * (dc1 * fs + dc3 * ks3 + dc4 * ks4 + dc5 * ks5 + dc6 * ks6)
+                    # error evaluation
+                    where( domain_slo_idx == 0 ) hs_err = 0.0
+                    errmax = maxval( hs_err ) / eps
+                #else:
+                # "time + ddt" should be less than "t * dt"
+                if(time + ddt > t * dt ) ddt = t * dt - time
+                time = time + ddt
+                hs_idx = hs_temp
+                qs_ave_idx = qs_ave_idx + qs_ave_temp_idx
+                #endif
 
-     do
+                # cumulative rainfall
+                for i = 1, ny
+                    for j = 1, nx
+                        if( domain(i,j) != 0 ) rain_sum = rain_sum + float(qp_t(i, j) * area * ddt)
+                    #enddo
+                #enddo
+                if(time.ge.t * dt) exit # finish for this timestep
+            #enddo
+        qs_ave_idx = qs_ave_idx / float(dt) / 6.0 # modified on ver 1.4.1
 
-      if(time + ddt > t * dt ) ddt = t * dt - time
+        #******* GW CALCULATION ******************************
+        #if( gw_switch == 0 ) go to 6
+        if( gw_switch != 0):
+            # from time = (t - 1) * dt to t * dt
+            time = (t - 1) * dt  # (current time)
+            # time step is initially set to be "dt"
+            ddt = dt
+            ddt_chk_slo = dt
 
-      # rainfall
-      itemp = -1
-      for jtemp = 1, tt_max_rain
-       if( t_rain(jtemp-1) < (time + ddt) .and. (time + ddt) <= t_rain(jtemp) ) itemp = jtemp
-      #enddo
-      for i = 1, ny
-       if(rain_i(i) < 1 .or. rain_i(i) > ny_rain ) continue
-       for j = 1, nx
-        if(rain_j(j) < 1 .or. rain_j(j) > nx_rain ) continue
-        qp_t(i, j) = qp(itemp, rain_i(i), rain_j(j))
-       #enddo
-      #enddo
-      call sub_slo_ij2idx( qp_t, qp_t_idx )
+            qg_ave = 0.0
+            qg_ave_idx = 0.0
 
-      # boundary condition for slope (water depth boundary)
-      if( bound_slo_wlev_switch >= 1 ):
-       itemp = -1
-       for jtemp = 1, tt_max_bound_slo_wlev
-        if( t_bound_slo_wlev(jtemp-1) < (time + ddt) .and. (time + ddt) <= t_bound_slo_wlev(jtemp) ) itemp = jtemp
-       #enddo
-       for k = 1, slo_count
-        if( bound_slo_wlev_idx(itemp, k) <= -100.0 ) continue # not boundary
-        hs_idx[k] = bound_slo_wlev_idx(itemp, k)
-       #enddo
-      #endif
+            # hg -> hg_idx
+            # Memo: slo_ij2idx must be here. 
+            # hg_idx cannot be replaced within the following for loop.
+            hg_idx = sub_slo_ij2idx( hg )
+            #call sub_slo_ij2idx( gampt_ff, gampt_ff_idx ) # modified by T.Sayama on June 10, 2017
 
-    3 continue
-      qs_ave_temp_idx[:,:] = 0.0
+            # GW Recharge
+            hg_idx = gw_recharge( hs_idx, gampt_ff_idx )
 
-      # Adaptive Runge-Kutta 
-      # (1)
-      call funcs( hs_idx, qp_t_idx, fs, qs_idx )
-      hs_temp = hs_idx + b21 * ddt * fs
-      where(hs_temp < 0) hs_temp = 0.0
-      qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+            # GW Lose
+            hg_idx = gw_lose( hg_idx )
 
-      # (2)
-      call funcs( hs_temp, qp_t_idx, ks2, qs_idx )
-      hs_temp = hs_idx + ddt * (b31 * fs + b32 * ks2)
-      where(hs_temp < 0) hs_temp = 0.0
-      qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+            while: #do
+                if( time + ddt > t * dt ):
+                    ddt = t * dt - time
+                #5 continue
+                #if(errmax > 1.0 and ddt >= ddt_min_slo):
+                while ( errmax > 1.0 and ddt > ddt_min_slo ): # modified on Jan 7, 2021
+                    qg_ave_temp_idx[:,:] = 0.0
 
-      # (3)
-      call funcs( hs_temp, qp_t_idx, ks3, qs_idx )
-      hs_temp = hs_idx + ddt * (b41 * fs + b42 * ks2 + b43 * ks3)
-      where(hs_temp < 0) hs_temp = 0.0
-      qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # Adaptive Runge-Kutta 
+                    # (1)
+                    qg_idx = funcg( hg_idx, fg )
+                    hg_temp = hg_idx + b21 * ddt * fg
+                    qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (4)
-      call funcs( hs_temp, qp_t_idx, ks4, qs_idx )
-      hs_temp = hs_idx + ddt * (b51 * fs + b52 * ks2 + b53 * ks3 + b54 * ks4)
-      where(hs_temp < 0) hs_temp = 0.0
-      qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (2)
+                    qg_idx = funcg( hg_temp, kg2 )
+                    hg_temp = hg_idx + ddt * (b31 * fg + b32 * kg2)
+                    qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (5)
-      call funcs( hs_temp, qp_t_idx, ks5, qs_idx )
-      hs_temp = hs_idx + ddt * (b61 * fs + b62 * ks2 + b63 * ks3 + b64 * ks4 + b65 * ks5)
-      where(hs_temp < 0) hs_temp = 0.0
-      qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (3)
+                    qg_idx = funcg( hg_temp, kg3 )
+                    hg_temp = hg_idx + ddt * (b41 * fg + b42 * kg2 + b43 * kg3)
+                    qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (6)
-      call funcs( hs_temp, qp_t_idx, ks6, qs_idx )
-      hs_temp = hs_idx + ddt * (c1 * fs + c3 * ks3 + c4 * ks4 + c6 * ks6)
-      where(hs_temp < 0) hs_temp = 0.0
-      qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
+                    # (4)
+                    qg_idx = funcg( hg_temp, kg4 )
+                    hg_temp = hg_idx + ddt * (b51 * fg + b52 * kg2 + b53 * kg3 + b54 * kg4)
+                    qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (e)
-      hs_err = ddt * (dc1 * fs + dc3 * ks3 + dc4 * ks4 + dc5 * ks5 + dc6 * ks6)
+                    # (5)
+                    qg_idx = funcg( hg_temp, kg5 )
+                    hg_temp = hg_idx + ddt * (b61 * fg + b62 * kg2 + b63 * kg3 + b64 * kg4 + b65 * kg5)
+                    qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # error evaluation
-      where( domain_slo_idx == 0 ) hs_err = 0.0
-      errmax = maxval( hs_err ) / eps
+                    # (6)
+                    qg_idx = funcg( hg_temp, kg6 )
+                    hg_temp = hg_idx + ddt * (c1 * fg + c3 * kg3 + c4 * kg4 + c6 * kg6)
+                    qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      #if(errmax.gt.1.0 .and. ddt >= ddt_min_slo):
-      if(errmax.gt.1.0 .and. ddt > ddt_min_slo): # modified on Jan 7, 2021
-       # try smaller ddt
-       ddt = max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
-       ddt = max( ddt, ddt_min_slo ) # added on Jan 7, 2021
-       ddt_chk_slo = ddt
-       print( "shrink (slo): ", ddt, errmax, maxloc( hs_err )
-       if(ddt == 0) stop 'stepsize underflow'
-       go to 3
-      else
-       # "time + ddt" should be less than "t * dt"
-       if(time + ddt > t * dt ) ddt = t * dt - time
-       time = time + ddt
-       hs_idx = hs_temp
-       qs_ave_idx = qs_ave_idx + qs_ave_temp_idx
-      #endif
+                    # (e)
+                    hg_err = ddt * (dc1 * fg + dc3 * kg3 + dc4 * kg4 + dc5 * kg5 + dc6 * kg6)
 
-      # cumulative rainfall
-      for i = 1, ny
-       for j = 1, nx
-        if( domain(i,j) != 0 ) rain_sum = rain_sum + float(qp_t(i, j) * area * ddt)
-       #enddo
-      #enddo
+                    # error evaluation
+                    hg_err = np.where( domain_slo_idx == 0, 0.0, hg_err)
+                    errmax = np.max( hg_err ) / eps
 
-      if(time.ge.t * dt) exit # finish for this timestep
-     #enddo
-     qs_ave_idx = qs_ave_idx / float(dt) / 6.0 # modified on ver 1.4.1
+                    ##if(errmax > 1.0 and ddt >= ddt_min_slo):
+                    #if(errmax > 1.0 and ddt > ddt_min_slo): # modified on Jan 7, 2021
+                    # try smaller ddt
+                    ddt = np.max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
+                    ddt = np.max( ddt, ddt_min_slo ) # added on Jan 7, 2021
+                    ddt_chk_slo = ddt
+                    print( "shrink (gw): %f, %f, %f " % (ddt, errmax, maxloc( hg_err ))
+                    if(ddt == 0):
+                        raise Exception ('stepsize underflow')
+                    #go to 5
+                #else:
+                # "time + ddt" should be less than "t * dt"
+                if( time + ddt > t * dt ):
+                    ddt = t * dt - time
+                time = time + ddt
+                hg_idx = hg_temp
+                qg_ave_idx = qg_ave_idx + qg_ave_temp_idx
+                #endif
 
-     #******* GW CALCULATION ******************************
-     #if( gw_switch == 0 ) go to 6
-     if( gw_switch != 0):
-        # from time = (t - 1) * dt to t * dt
-        time = (t - 1) * dt  # (current time)
-        # time step is initially set to be "dt"
-        ddt = dt
-        ddt_chk_slo = dt
+                if( time >= t * dt ):
+                    break # finish for this timestep
+            #end while do
 
-        qg_ave = 0.0
-        qg_ave_idx = 0.0
+            qg_ave_idx = qg_ave_idx / float(dt) / 6.0
 
-        # hg -> hg_idx
-        # Memo: slo_ij2idx must be here. 
-        # hg_idx cannot be replaced within the following for loop.
-        hg_idx = sub_slo_ij2idx( hg )
-        #call sub_slo_ij2idx( gampt_ff, gampt_ff_idx ) # modified by T.Sayama on June 10, 2017
+            time = t * dt
 
-        # GW Recharge
-        hg_idx = gw_recharge( hs_idx, gampt_ff_idx )
+            #******* GW Exfiltration ********************************
+            hg_idx = gw_exfilt( hs_idx, gampt_ff_idx )
+        #ENDIF if( gw_switch == 0 ) go to 6
+        #6 continue
 
-        # GW Lose
-        hg_idx = gw_lose( hg_idx )
+        #******* Evapotranspiration *****************************
+        if( evp_switch != 0 ) call evp(hs_idx, gampt_ff_idx)
 
-        while: #do
+        # hs_idx -> hs
+        call sub_slo_idx2ij( hs_idx, hs )
+        call sub_slo_idx2ij4( qs_ave_idx, qs_ave )
+        call sub_slo_idx2ij( hg_idx, hg )
+        call sub_slo_idx2ij4( qg_ave_idx, qg_ave )
+        call sub_slo_idx2ij( gampt_ff_idx, gampt_ff )
 
-            if( time + ddt > t * dt ):
-                ddt = t * dt - time
+        #******* LEVEE BREAK ************************************
+        #call levee_break(t, hr, hs, xllcorner, yllcorner, cellsize)
 
-            #5 continue
-            #if(errmax > 1.0 and ddt >= ddt_min_slo):
-            while ( errmax > 1.0 and ddt > ddt_min_slo ): # modified on Jan 7, 2021
-                qg_ave_temp_idx[:,:] = 0.0
+        #******* RIVER-SLOPE INTERACTIONS ***********************
+        if( riv_thresh >= 0 ) call funcrs(hr, hs)
+        call sub_riv_ij2idx( hr, hr_idx )
+        call sub_slo_ij2idx( hs, hs_idx )
 
-                # Adaptive Runge-Kutta 
-                # (1)
-                qg_idx = funcg( hg_idx, fg )
-                hg_temp = hg_idx + b21 * ddt * fg
-                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+        #******* INFILTRATION (Green Ampt) **********************
+        call infilt(hs_idx, gampt_ff_idx, gampt_f_idx)
+        call sub_slo_idx2ij( hs_idx, hs )
+        call sub_slo_idx2ij( gampt_ff_idx, gampt_ff )
+        call sub_slo_idx2ij( gampt_f_idx, gampt_f )
 
-                # (2)
-                qg_idx = funcg( hg_temp, kg2 )
-                hg_temp = hg_idx + ddt * (b31 * fg + b32 * kg2)
-                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+        #******* SET WATER DEPTH 0 AT DOMAIN = 2 ****************
+        for i = 1, ny
+            for j = 1, nx
+                if( domain(i,j) == 2  ):
+                    sout = sout + hs(i,j) * area
+                    hs(i,j) = 0.0
+                    if( riv(i,j) == 1):
+                        call hr2vr(hr(i, j), riv_ij2idx(i,j), vr_out)
+                        sout = sout + vr_out
+                        hr(i,j) = 0.0
+                    #endif
+                #endif
+            #enddo
+        #enddo
 
-                # (3)
-                qg_idx = funcg( hg_temp, kg3 )
-                hg_temp = hg_idx + ddt * (b41 * fg + b42 * kg2 + b43 * kg3)
-                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+        # hs -> hs_idx, hr -> hr_idx, hg -> hg_idx
+        call sub_riv_ij2idx( hr, hr_idx )
+        call sub_slo_ij2idx( hs, hs_idx )
+        call sub_slo_ij2idx( hg, hg_idx )
 
-                # (4)
-                qg_idx = funcg( hg_temp, kg4 )
-                hg_temp = hg_idx + ddt * (b51 * fg + b52 * kg2 + b53 * kg3 + b54 * kg4)
-                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+        print( "max hr: ", maxval(hr), "loc : ", maxloc(hr)
+        print( "max hs: ", maxval(hs), "loc : ", maxloc(hs)
+        if(gw_switch == 1) print( "max hg: ", maxval(hg), "loc : ", maxloc(hg)
 
-                # (5)
-                qg_idx = funcg( hg_temp, kg5 )
-                hg_temp = hg_idx + ddt * (b61 * fg + b62 * kg2 + b63 * kg3 + b64 * kg4 + b65 * kg5)
-                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+        #******* OUTPUT *****************************************
+        # For TSAS Output
+        #call RRI_TSAS(t, hs_idx, hr_idx, hg_idx, qs_ave_idx, qr_ave_idx, qg_ave_idx, qp_t_idx)
+        if( hydro_switch == 1 .and. mod(int(time), 3600) == 0 ) write(1012, '(f12.2, 10000f14.5)') time, (qr_ave(hydro_i[k], hydro_j[k]), k = 1, maxhydro)
 
-                # (6)
-                qg_idx = funcg( hg_temp, kg6 )
-                hg_temp = hg_idx + ddt * (c1 * fg + c3 * kg3 + c4 * kg4 + c6 * kg6)
-                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+        if( hydro_switch == 1 .and. mod(int(time), 3600) == 0 ) write(1013, '(f12.2, 10000f14.5)') time, (hr(hydro_i[k], hydro_j[k]), k = 1, maxhydro) # added by T.Sayama on July 1, 2021
 
-                # (e)
-                hg_err = ddt * (dc1 * fg + dc3 * kg3 + dc4 * kg4 + dc5 * kg5 + dc6 * kg6)
+        # open output files
+        if( t == out_next ):
+            print( "OUTPUT :", t, time)
+            tt = tt + 1
+            out_next = round((tt+1) * out_dt)
+            t_char = int2char(tt)
+            where(domain == 0):
+                hs = -0.10
+            if(riv_thresh >= 0):
+                hr = np.where(domain == 0, -0.10, hr)
+            if(riv_thresh >= 0):
+                qr_ave = np.where(domain == 0, -0.10, qr_ave)
+            gampt_ff = np.where(domain == 0, -0.10, gampt_ff)
+            aevp = np.where(domain == 0, -0.10, aevp)
+            if( evp_switch != 0 ):
+                qe_t = np.where(domain == 0, -0.10, qe_t)
+            hg = np.where(domain == 0, -0.10, hg)
+            if(outswitch_hs == 1):
+                ofile_hs = trim(outfile_hs) + trim(t_char) + ".out"
+            if(outswitch_hs == 2):
+                ofile_hs = trim(outfile_hs) + trim(t_char) + ".bin"
+            if(outswitch_hr == 1):
+                ofile_hr = trim(outfile_hr) + trim(t_char) + ".out"
+            if(outswitch_hr == 2):
+                ofile_hr = trim(outfile_hr) + trim(t_char) + ".bin"
+            if(outswitch_hg == 1):
+                ofile_hg = trim(outfile_hg) + trim(t_char) + ".out"
+            if(outswitch_hg == 2):
+                ofile_hg = trim(outfile_hg) + trim(t_char) + ".bin"
+            if(outswitch_qr == 1):
+                ofile_qr = trim(outfile_qr) + trim(t_char) + ".out"
+            if(outswitch_qr == 2):
+                ofile_qr = trim(outfile_qr) + trim(t_char) + ".bin"
+            if(outswitch_qu == 1):
+                ofile_qu = trim(outfile_qu) + trim(t_char) + ".out"
+            if(outswitch_qu == 2):
+                ofile_qu = trim(outfile_qu) + trim(t_char) + ".bin"
+            if(outswitch_qv == 1):
+                ofile_qv = trim(outfile_qv) + trim(t_char) + ".out"
+            if(outswitch_qv == 2):
+                ofile_qv = trim(outfile_qv) + trim(t_char) + ".bin"
+            if(outswitch_gu == 1):
+                ofile_gu = trim(outfile_gu) + trim(t_char) + ".out"
+            if(outswitch_gu == 2):
+                ofile_gu = trim(outfile_gu) + trim(t_char) + ".bin"
+            if(outswitch_gv == 1):
+                ofile_gv = trim(outfile_gv) + trim(t_char) + ".out"
+            if(outswitch_gv == 2):
+                ofile_gv = trim(outfile_gv) + trim(t_char) + ".bin"
+            if(outswitch_gampt_ff == 1):
+                ofile_gampt_ff = trim(outfile_gampt_ff) + trim(t_char) + ".out"
+            if(outswitch_gampt_ff == 2):
+                ofile_gampt_ff = trim(outfile_gampt_ff) + trim(t_char) + ".bin"
 
-                # error evaluation
-                hg_err = np.where( domain_slo_idx == 0, 0.0, hg_err)
-                errmax = np.max( hg_err ) / eps
+            if(outswitch_hs == 1) open( 100, file = ofile_hs )
+            if(outswitch_hr == 1) open( 101, file = ofile_hr )
+            if(outswitch_hg == 1) open( 102, file = ofile_hg )
+            if(outswitch_qr == 1) open( 103, file = ofile_qr )
+            if(outswitch_qu == 1) open( 104, file = ofile_qu )
+            if(outswitch_qv == 1) open( 105, file = ofile_qv )
+            if(outswitch_gu == 1) open( 106, file = ofile_gu )
+            if(outswitch_gv == 1) open( 107, file = ofile_gv )
+            if(outswitch_gampt_ff == 1) open( 108, file = ofile_gampt_ff )
 
-                ##if(errmax > 1.0 and ddt >= ddt_min_slo):
-                #if(errmax > 1.0 and ddt > ddt_min_slo): # modified on Jan 7, 2021
-                # try smaller ddt
-                ddt = np.max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
-                ddt = np.max( ddt, ddt_min_slo ) # added on Jan 7, 2021
-                ddt_chk_slo = ddt
-                print( "shrink (gw): %f, %f, %f " % (ddt, errmax, maxloc( hg_err ))
-                if(ddt == 0):
-                    raise Exception ('stepsize underflow')
-                #go to 5
-            #else:
-            # "time + ddt" should be less than "t * dt"
-            if( time + ddt > t * dt ):
-                ddt = t * dt - time
-            time = time + ddt
-            hg_idx = hg_temp
-            qg_ave_idx = qg_ave_idx + qg_ave_temp_idx
+            if(outswitch_hs == 2) open( 100, file = ofile_hs, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_hr == 2) open( 101, file = ofile_hr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_hg == 2) open( 102, file = ofile_hr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_qr == 2) open( 103, file = ofile_qr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_qu == 2) open( 104, file = ofile_qu, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_qv == 2) open( 105, file = ofile_qv, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_gu == 2) open( 106, file = ofile_gu, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_gv == 2) open( 107, file = ofile_gv, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            if(outswitch_gampt_ff == 2) open( 108, file = ofile_gampt_ff, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+
+            # output (ascii)
+            for i = 1, ny
+                if(outswitch_hs == 1) write(100,'(10000f14.5)') (hs(i, j), j = 1, nx)
+                if(outswitch_hr == 1) write(101,'(10000f14.5)') (hr(i, j), j = 1, nx)
+                #if(outswitch_hr == 1) write(101,'(10000f14.5)') ((hr(i, j) + zb_riv(i, j)), j = 1, nx)
+                if(outswitch_hg == 1) write(102,'(10000f14.5)') (hg(i, j), j = 1, nx)
+                if(outswitch_qr == 1) write(103,'(10000f14.5)') ((qr_ave(i,j)), j = 1, nx) # [m3/s]
+                if(outswitch_qu == 1) write(104,'(10000f14.5)') (((qs_ave(1, i, j) + (qs_ave(3, i, j) - qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
+                #if(outswitch_qv == 1) write(105,'(10000f14.5)') (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
+                if(outswitch_qv == 1) write(105,'(10000e14.5)') (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
+                if(outswitch_gu == 1) write(106,'(10000f14.8)') (((qg_ave(1, i, j) + (qg_ave(3, i, j) - qg_ave(4, i, j)) / 2.0) * area), j = 1, nx)
+                if(outswitch_gv == 1) write(107,'(10000f14.5)') (((qg_ave(2, i, j) + (qg_ave(3, i, j) + qg_ave(4, i, j)) / 2.0) * area), j = 1, nx)
+                if(outswitch_gampt_ff == 1) write(108,'(10000f14.5)') (gampt_ff(i, j), j = 1, nx)
+            #enddo
+
+            # output (binary)
+            if(outswitch_hs == 2) write(100,rec=1) ((hs(i,j), j = 1, nx), i = ny, 1, -1)
+            if(outswitch_hr == 2) write(101,rec=1) ((hr(i,j), j = 1, nx), i = ny, 1, -1)
+            if(outswitch_hg == 2) write(102,rec=1) ((hg(i,j), j = 1, nx), i = ny, 1, -1)
+            if(outswitch_qr == 2) write(103,rec=1) ((qr_ave(i,j), j = 1, nx), i = ny, 1, -1) # [m3/s]
+            if(outswitch_qu == 2) write(104,rec=1) (((qs_ave(1, i, j) + (qs_ave(3, i, j) - qs_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
+            if(outswitch_qv == 2) write(105,rec=1) (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
+            if(outswitch_gu == 2) write(106,rec=1) (((qg_ave(1, i, j) + (qg_ave(3, i, j) - qg_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
+            if(outswitch_gv == 2) write(107,rec=1) (((qg_ave(2, i, j) + (qg_ave(3, i, j) + qg_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
+            if(outswitch_gampt_ff == 2) write(108,rec=1) ((gampt_ff(i,j), j = 1, nx), i = ny, 1, -1)
+
+            if(outswitch_hs != 0) close(100)
+            if(outswitch_hr != 0) close(101)
+            if(outswitch_hg != 0) close(102)
+            if(outswitch_qr != 0) close(103)
+            if(outswitch_qu != 0) close(104)
+            if(outswitch_qv != 0) close(105)
+            if(outswitch_gu != 0) close(106)
+            if(outswitch_gv != 0) close(107)
+            if(outswitch_gampt_ff != 0) close(108)
+
+            if( tec_switch == 1 ):
+                if (tt == 1):
+                    call Tecout_alloc(nx, ny, 4)
+                    call Tecout_mkGrid(dx, dy, zs)
+                    call Tecout_write_initialize(tt, width, depth, height, area_ratio)
+                #endif
+                call Tecout_write(tt, qp_t, hr, qr_ave, hs, area)
             #endif
 
-            if( time >= t * dt ):
-                break # finish for this timestep
-        #end while do
+            # For dt_check
+            #call dt_check_riv(hr_idx, tt, ddt_chk_riv)
+            #call dt_check_slo(hs_idx, tt, ddt_chk_slo)
 
-        qg_ave_idx = qg_ave_idx / float(dt) / 6.0
+            if( dam_switch == 1 ):
+                if( tt == 1 ) open(1001, file = "./out/dam_out.txt")
+                call dam_write
+                if(t == maxt ):
+                    open(1002, file = "./out/damcnt_out.txt")
+                    call dam_write_cnt
+                #endif
+            #endif
 
-        time = t * dt
+            #******* OUTPUT FOR UNSTEADY MODEL (DIR = -1) *********** added on Sep 15, 2019
+            itemp = 0
+            for k = 1, riv_count
+                i = riv_idx2i[k]
+                j = riv_idx2j[k]
+                if(dir(i, j) == -1) itemp = 1
+            #enddo
 
-        #******* GW Exfiltration ********************************
-        hg_idx = gw_exfilt( hs_idx, gampt_ff_idx )
-     #ENDIF if( gw_switch == 0 ) go to 6
-     #6 continue
+            if( itemp == 1):
+                ofile_ro = './out/ro_' // trim(t_char) // ".out"
+                open(111, file = ofile_ro)
+                for k = 1, riv_count
+                    i = riv_idx2i[k]
+                    j = riv_idx2j[k]
+                    kk = down_riv_idx[k]
+                    if(k == kk) continue
+                    ii = riv_idx2i[kk]
+                    jj = riv_idx2j[kk]
+                    if(dir(ii,jj) == -1):
+                        write(111,'(5i6, 10000f14.5)') 1, i, j, ii, jj, qr_ave_idx[k]
+                    #endif
+                #enddo
+            for k = 1, slo_count
+                i = slo_idx2i[k]
+                j = slo_idx2j[k]
+                if(dir(i, j) == -1) continue
+                for l = 1, lmax
+                    kk = down_slo_idx(l, k)
+                    if(kk <= 0) continue
+                    ii = slo_idx2i[kk]
+                    jj = slo_idx2j[kk]
+                    if(dir(ii,jj) == -1):
+                        write(111,'(5i6, 10000f14.5)') 2, i, j, ii, jj, qs_ave(l, i, j) * area
+                    #endif
+                #enddo
+            #enddo
 
-     #******* Evapotranspiration *****************************
-     if( evp_switch != 0 ) call evp(hs_idx, gampt_ff_idx)
+            for k = 1, slo_count
+                i = slo_idx2i[k]
+                j = slo_idx2j[k]
+                if(dir(i,j) == -1):
+                    for l in range(1, lmax):
+                        kk = down_slo_idx[l, k]
+                        if(kk <= 0):
+                            continue
+                        ii = slo_idx2i[kk]
+                        jj = slo_idx2j[kk]
+                        if(domain(ii, jj) != 1):
+                            continue
+                        f111.write( 3, ii, jj, i, j, -1.0 * qs_ave(l, ii, jj) * area
+                    #enddo
+                #endif
+            #enddo
 
-     # hs_idx -> hs
-     call sub_slo_idx2ij( hs_idx, hs )
-     call sub_slo_idx2ij4( qs_ave_idx, qs_ave )
-     call sub_slo_idx2ij( hg_idx, hg )
-     call sub_slo_idx2ij4( qg_ave_idx, qg_ave )
-     call sub_slo_idx2ij( gampt_ff_idx, gampt_ff )
-
-     #******* LEVEE BREAK ************************************
-     #call levee_break(t, hr, hs, xllcorner, yllcorner, cellsize)
-
-     #******* RIVER-SLOPE INTERACTIONS ***********************
-     if( riv_thresh >= 0 ) call funcrs(hr, hs)
-     call sub_riv_ij2idx( hr, hr_idx )
-     call sub_slo_ij2idx( hs, hs_idx )
-
-     #******* INFILTRATION (Green Ampt) **********************
-     call infilt(hs_idx, gampt_ff_idx, gampt_f_idx)
-     call sub_slo_idx2ij( hs_idx, hs )
-     call sub_slo_idx2ij( gampt_ff_idx, gampt_ff )
-     call sub_slo_idx2ij( gampt_f_idx, gampt_f )
-
-     #******* SET WATER DEPTH 0 AT DOMAIN = 2 ****************
-     for i = 1, ny
-      for j = 1, nx
-       if( domain(i,j) == 2  ):
-        sout = sout + hs(i,j) * area
-        hs(i,j) = 0.0
-        if( riv(i,j) == 1):
-         call hr2vr(hr(i, j), riv_ij2idx(i,j), vr_out)
-         sout = sout + vr_out
-         hr(i,j) = 0.0
+            # added on Feb 14, 2021 to include rainfall on grid cells with dir = -1
+            for k in range(1, slo_count):
+                i = slo_idx2i[k]
+                j = slo_idx2j[k]
+                if(dir(i,j) == -1):
+                    f111.write( 4, i, j, i, j, qp_t_idx[k] * area)
+                #endif
+            #enddo
+            f111.close()
         #endif
-       #endif
-      #enddo
-     #enddo
-
-     # hs -> hs_idx, hr -> hr_idx, hg -> hg_idx
-     call sub_riv_ij2idx( hr, hr_idx )
-     call sub_slo_ij2idx( hs, hs_idx )
-     call sub_slo_ij2idx( hg, hg_idx )
-
-     print( "max hr: ", maxval(hr), "loc : ", maxloc(hr)
-     print( "max hs: ", maxval(hs), "loc : ", maxloc(hs)
-     if(gw_switch == 1) print( "max hg: ", maxval(hg), "loc : ", maxloc(hg)
-
-     #******* OUTPUT *****************************************
-
-     # For TSAS Output
-     #call RRI_TSAS(t, hs_idx, hr_idx, hg_idx, qs_ave_idx, qr_ave_idx, qg_ave_idx, qp_t_idx)
-
-     if( hydro_switch == 1 .and. mod(int(time), 3600) == 0 ) write(1012, '(f12.2, 10000f14.5)') time, (qr_ave(hydro_i[k], hydro_j[k]), k = 1, maxhydro)
-
-     if( hydro_switch == 1 .and. mod(int(time), 3600) == 0 ) write(1013, '(f12.2, 10000f14.5)') time, (hr(hydro_i[k], hydro_j[k]), k = 1, maxhydro) # added by T.Sayama on July 1, 2021
-
-     # open output files
-     if( t == out_next ):
-
-      print( "OUTPUT :", t, time
-
-      tt = tt + 1
-      out_next = round((tt+1) * out_dt)
-      call int2char(tt, t_char)
-
-      where(domain == 0) hs = -0.10
-      if(riv_thresh.ge.0) where(domain == 0) hr = -0.10
-      if(riv_thresh.ge.0) where(domain == 0) qr_ave = -0.10
-      where(domain == 0) gampt_ff = -0.10
-      where(domain == 0) aevp = -0.10
-      if( evp_switch != 0 ) where(domain == 0) qe_t = -0.10
-      where(domain == 0) hg = -0.10
-
-      if(outswitch_hs == 1) ofile_hs = trim(outfile_hs) // trim(t_char) // ".out"
-      if(outswitch_hs == 2) ofile_hs = trim(outfile_hs) // trim(t_char) // ".bin"
-      if(outswitch_hr == 1) ofile_hr = trim(outfile_hr) // trim(t_char) // ".out"
-      if(outswitch_hr == 2) ofile_hr = trim(outfile_hr) // trim(t_char) // ".bin"
-      if(outswitch_hg == 1) ofile_hg = trim(outfile_hg) // trim(t_char) // ".out"
-      if(outswitch_hg == 2) ofile_hg = trim(outfile_hg) // trim(t_char) // ".bin"
-      if(outswitch_qr == 1) ofile_qr = trim(outfile_qr) // trim(t_char) // ".out"
-      if(outswitch_qr == 2) ofile_qr = trim(outfile_qr) // trim(t_char) // ".bin"
-      if(outswitch_qu == 1) ofile_qu = trim(outfile_qu) // trim(t_char) // ".out"
-      if(outswitch_qu == 2) ofile_qu = trim(outfile_qu) // trim(t_char) // ".bin"
-      if(outswitch_qv == 1) ofile_qv = trim(outfile_qv) // trim(t_char) // ".out"
-      if(outswitch_qv == 2) ofile_qv = trim(outfile_qv) // trim(t_char) // ".bin"
-      if(outswitch_gu == 1) ofile_gu = trim(outfile_gu) // trim(t_char) // ".out"
-      if(outswitch_gu == 2) ofile_gu = trim(outfile_gu) // trim(t_char) // ".bin"
-      if(outswitch_gv == 1) ofile_gv = trim(outfile_gv) // trim(t_char) // ".out"
-      if(outswitch_gv == 2) ofile_gv = trim(outfile_gv) // trim(t_char) // ".bin"
-      if(outswitch_gampt_ff == 1) ofile_gampt_ff = trim(outfile_gampt_ff) // trim(t_char) // ".out"
-      if(outswitch_gampt_ff == 2) ofile_gampt_ff = trim(outfile_gampt_ff) // trim(t_char) // ".bin"
-
-      if(outswitch_hs == 1) open( 100, file = ofile_hs )
-      if(outswitch_hr == 1) open( 101, file = ofile_hr )
-      if(outswitch_hg == 1) open( 102, file = ofile_hg )
-      if(outswitch_qr == 1) open( 103, file = ofile_qr )
-      if(outswitch_qu == 1) open( 104, file = ofile_qu )
-      if(outswitch_qv == 1) open( 105, file = ofile_qv )
-      if(outswitch_gu == 1) open( 106, file = ofile_gu )
-      if(outswitch_gv == 1) open( 107, file = ofile_gv )
-      if(outswitch_gampt_ff == 1) open( 108, file = ofile_gampt_ff )
-
-      if(outswitch_hs == 2) open( 100, file = ofile_hs, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_hr == 2) open( 101, file = ofile_hr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_hg == 2) open( 102, file = ofile_hr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_qr == 2) open( 103, file = ofile_qr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_qu == 2) open( 104, file = ofile_qu, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_qv == 2) open( 105, file = ofile_qv, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_gu == 2) open( 106, file = ofile_gu, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_gv == 2) open( 107, file = ofile_gv, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-      if(outswitch_gampt_ff == 2) open( 108, file = ofile_gampt_ff, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-
-      # output (ascii)
-      for i = 1, ny
-       if(outswitch_hs == 1) write(100,'(10000f14.5)') (hs(i, j), j = 1, nx)
-       if(outswitch_hr == 1) write(101,'(10000f14.5)') (hr(i, j), j = 1, nx)
-       #if(outswitch_hr == 1) write(101,'(10000f14.5)') ((hr(i, j) + zb_riv(i, j)), j = 1, nx)
-       if(outswitch_hg == 1) write(102,'(10000f14.5)') (hg(i, j), j = 1, nx)
-       if(outswitch_qr == 1) write(103,'(10000f14.5)') ((qr_ave(i,j)), j = 1, nx) # [m3/s]
-       if(outswitch_qu == 1) write(104,'(10000f14.5)') (((qs_ave(1, i, j) + (qs_ave(3, i, j) - qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-       #if(outswitch_qv == 1) write(105,'(10000f14.5)') (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-       if(outswitch_qv == 1) write(105,'(10000e14.5)') (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-       if(outswitch_gu == 1) write(106,'(10000f14.8)') (((qg_ave(1, i, j) + (qg_ave(3, i, j) - qg_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-       if(outswitch_gv == 1) write(107,'(10000f14.5)') (((qg_ave(2, i, j) + (qg_ave(3, i, j) + qg_ave(4, i, j)) / 2.0) * area), j = 1, nx)
-       if(outswitch_gampt_ff == 1) write(108,'(10000f14.5)') (gampt_ff(i, j), j = 1, nx)
-      #enddo
-
-      # output (binary)
-      if(outswitch_hs == 2) write(100,rec=1) ((hs(i,j), j = 1, nx), i = ny, 1, -1)
-      if(outswitch_hr == 2) write(101,rec=1) ((hr(i,j), j = 1, nx), i = ny, 1, -1)
-      if(outswitch_hg == 2) write(102,rec=1) ((hg(i,j), j = 1, nx), i = ny, 1, -1)
-      if(outswitch_qr == 2) write(103,rec=1) ((qr_ave(i,j), j = 1, nx), i = ny, 1, -1) # [m3/s]
-      if(outswitch_qu == 2) write(104,rec=1) (((qs_ave(1, i, j) + (qs_ave(3, i, j) - qs_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-      if(outswitch_qv == 2) write(105,rec=1) (((qs_ave(2, i, j) + (qs_ave(3, i, j) + qs_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-      if(outswitch_gu == 2) write(106,rec=1) (((qg_ave(1, i, j) + (qg_ave(3, i, j) - qg_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-      if(outswitch_gv == 2) write(107,rec=1) (((qg_ave(2, i, j) + (qg_ave(3, i, j) + qg_ave(4, i, j)) / 2.0) * area), i = ny, 1, -1)
-      if(outswitch_gampt_ff == 2) write(108,rec=1) ((gampt_ff(i,j), j = 1, nx), i = ny, 1, -1)
-
-      if(outswitch_hs != 0) close(100)
-      if(outswitch_hr != 0) close(101)
-      if(outswitch_hg != 0) close(102)
-      if(outswitch_qr != 0) close(103)
-      if(outswitch_qu != 0) close(104)
-      if(outswitch_qv != 0) close(105)
-      if(outswitch_gu != 0) close(106)
-      if(outswitch_gv != 0) close(107)
-      if(outswitch_gampt_ff != 0) close(108)
-
-      if( tec_switch == 1 ):
-       if (tt == 1):
-        call Tecout_alloc(nx, ny, 4)
-        call Tecout_mkGrid(dx, dy, zs)
-        call Tecout_write_initialize(tt, width, depth, height, area_ratio)
-       #endif
-       call Tecout_write(tt, qp_t, hr, qr_ave, hs, area)
-      end if
-
-      # For dt_check
-      #call dt_check_riv(hr_idx, tt, ddt_chk_riv)
-      #call dt_check_slo(hs_idx, tt, ddt_chk_slo)
-
-      if( dam_switch == 1 ):
-       if( tt == 1 ) open(1001, file = "./out/dam_out.txt")
-       call dam_write
-       if(t == maxt ):
-        open(1002, file = "./out/damcnt_out.txt")
-        call dam_write_cnt
-       #endif
-      #endif
-
-      #******* OUTPUT FOR UNSTEADY MODEL (DIR = -1) *********** added on Sep 15, 2019
-      itemp = 0
-      for k = 1, riv_count
-       i = riv_idx2i[k]
-       j = riv_idx2j[k]
-       if(dir(i, j) == -1) itemp = 1
-      #enddo
-
-      if( itemp == 1):
-       ofile_ro = './out/ro_' // trim(t_char) // ".out"
-       open(111, file = ofile_ro)
-       for k = 1, riv_count
-        i = riv_idx2i[k]
-        j = riv_idx2j[k]
-        kk = down_riv_idx[k]
-        if(k == kk) continue
-        ii = riv_idx2i[kk]
-        jj = riv_idx2j[kk]
-        if(dir(ii,jj) == -1):
-         write(111,'(5i6, 10000f14.5)') 1, i, j, ii, jj, qr_ave_idx[k]
-        #endif
-       #enddo
-
-       for k = 1, slo_count
-        i = slo_idx2i[k]
-        j = slo_idx2j[k]
-        if(dir(i, j) == -1) continue
-        for l = 1, lmax
-         kk = down_slo_idx(l, k)
-         if(kk <= 0) continue
-         ii = slo_idx2i[kk]
-         jj = slo_idx2j[kk]
-         if(dir(ii,jj) == -1):
-          write(111,'(5i6, 10000f14.5)') 2, i, j, ii, jj, qs_ave(l, i, j) * area
-         #endif
-        #enddo
-       #enddo
-
-       for k = 1, slo_count
-        i = slo_idx2i[k]
-        j = slo_idx2j[k]
-        if(dir(i,j) == -1):
-         for l in range(1, lmax):
-          kk = down_slo_idx[l, k]
-          if(kk <= 0):
-            continue
-          ii = slo_idx2i[kk]
-          jj = slo_idx2j[kk]
-          if(domain(ii, jj) != 1):
-            continue
-          f111.write( 3, ii, jj, i, j, -1.0 * qs_ave(l, ii, jj) * area
-         #enddo
-        #endif
-       #enddo
-
-       # added on Feb 14, 2021 to include rainfall on grid cells with dir = -1
-       for k in range(1, slo_count):
-        i = slo_idx2i[k]
-        j = slo_idx2j[k]
-        if(dir(i,j) == -1):
-         f111.write( 4, i, j, i, j, qp_t_idx[k] * area)
-        #endif
-       #enddo
-
-       f111.close()
-      #endif
-     #endif
-
-     # check water balance
-     if(mod(t, 1) == 0):
-      call storage_calc(hs, hr, hg, ss, sr, si, sg)
-      print( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit))
-      f1000.write( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg)
-     #endif
+    #endif
+    # check water balance
+    if(mod(t, 1) == 0):
+        call storage_calc(hs, hr, hg, ss, sr, si, sg)
+        print( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit))
+        f1000.write( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg)
+    #endif
 
     #enddo
 

@@ -654,7 +654,8 @@ def rri():
                 vr_idx[k] = hr2vr(hr_idx[k], k)
             #enddo
 
-            do #-----------------*******************
+            #do #-----------------*******************
+            while( time < t * dt):
                 # "time + ddt" should be less than "t * dt"
                 if(time + ddt > t * dt ):
                     ddt = t * dt - time
@@ -679,7 +680,7 @@ def rri():
                     ddt = np.max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
                     ddt = np.max( ddt, ddt_min_riv ) # added on Jan 7, 2021
                     ddt_chk_riv = ddt
-                    print( "shrink (riv): %f, %f, %f" % (ddt, errmax, maxloc( vr_err ))
+                    print( "shrink (riv): %f, %f, %f" % (ddt, errmax, maxloc( vr_err )))
                     if(ddt == 0):
                         raise Exception ('stepsize underflow')
                     if(dam_switch == 1 ):
@@ -689,39 +690,39 @@ def rri():
 
                     # Adaptive Runge-Kutta 
                     # (1)
-                    call funcr( vr_idx, fr, qr_idx )
+                    fr, qr_idx = funcr( riv_count, vr_idx )
                     vr_temp = vr_idx + b21 * ddt * fr
-                    where(vr_temp < 0) vr_temp = 0.0
+                    vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (2)
-                    call funcr( vr_temp, kr2, qr_idx )
+                    kr2, qr_idx = funcr( riv_count, vr_temp )
                     vr_temp = vr_idx + ddt * (b31 * fr + b32 * kr2)
-                    where(vr_temp < 0) vr_temp = 0.0
+                    vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (3)
-                    call funcr( vr_temp, kr3, qr_idx )
+                    kr3, qr_idx = funcr( riv_count, vr_temp )
                     vr_temp = vr_idx + ddt * (b41 * fr + b42 * kr2 + b43 * kr3)
-                    where(vr_temp < 0) vr_temp = 0.0
+                    vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (4)
-                    call funcr( vr_temp, kr4, qr_idx )
+                    kr4, qr_idx = funcr( riv_count, vr_temp )
                     vr_temp = vr_idx + ddt * (b51 * fr + b52 * kr2 + b53 * kr3 + b54 * kr4)
-                    where(vr_temp < 0) vr_temp = 0.0
+                    vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (5)
-                    call funcr( vr_temp, kr5, qr_idx )
+                    kr5, qr_idx = funcr( riv_count, vr_temp )
                     vr_temp = vr_idx + ddt * (b61 * fr + b62 * kr2 + b63 * kr3 + b64 * kr4 + b65 * kr5)
-                    where(vr_temp < 0) vr_temp = 0.0
+                    vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (6)
-                    call funcr( vr_temp, kr6, qr_idx )
+                    kr6, qr_idx = funcr( riv_count, vr_temp )
                     vr_temp = vr_idx + ddt * (c1 * fr + c3 * kr3 + c4 * kr4 + c6 * kr6)
-                    where(vr_temp < 0) vr_temp = 0.0
+                    vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (e)
@@ -730,12 +731,12 @@ def rri():
                     hr_err[:] = vr_err[:] / (area * area_ratio_idx[:])
 
                     # error evaluation
-                    where( domain_riv_idx == 0 ) hr_err = 0
+                    hr_err = np.where( domain_riv_idx == 0, 0, hr_err)
                     errmax = maxval( hr_err ) / eps
                 #else
                 # modified on Jan 7, 2021
                 if(ddt == ddt_min_riv):
-                    call funcr( vr_temp, kr6, qr_idx )
+                    kr6, qr_idx = funcr( riv_count, vr_temp )
                     qr_ave_temp_idx = qr_idx * ddt * 6.0
                 #endif
                 if(time + ddt > t * dt ):
@@ -744,8 +745,6 @@ def rri():
                 vr_idx = vr_temp
                 qr_ave_idx = qr_ave_idx + qr_ave_temp_idx
                 #endif
-                if(time.ge.t * dt):
-                    break # finish for this timestep
             #enddo --------------************
             qr_ave_idx = qr_ave_idx / float(dt) / 6.0
 
@@ -972,59 +971,64 @@ def rri():
         #6 continue
 
         #******* Evapotranspiration *****************************
-        if( evp_switch != 0 ) call evp(hs_idx, gampt_ff_idx)
+        if( evp_switch != 0 ):
+            call evp(hs_idx, gampt_ff_idx)
 
         # hs_idx -> hs
-        call sub_slo_idx2ij( hs_idx, hs )
-        call sub_slo_idx2ij4( qs_ave_idx, qs_ave )
-        call sub_slo_idx2ij( hg_idx, hg )
-        call sub_slo_idx2ij4( qg_ave_idx, qg_ave )
-        call sub_slo_idx2ij( gampt_ff_idx, gampt_ff )
+        hs = sub_slo_idx2ij( hs_idx )
+        qs_ave = sub_slo_idx2ij4( qs_ave_idx )
+        hg = sub_slo_idx2ij( hg_idx )
+        qg_ave = sub_slo_idx2ij4( qg_ave_idx )
+        gampt_ff = sub_slo_idx2ij( gampt_ff_idx )
 
         #******* LEVEE BREAK ************************************
         #call levee_break(t, hr, hs, xllcorner, yllcorner, cellsize)
 
         #******* RIVER-SLOPE INTERACTIONS ***********************
-        if( riv_thresh >= 0 ) call funcrs(hr, hs)
-        call sub_riv_ij2idx( hr, hr_idx )
-        call sub_slo_ij2idx( hs, hs_idx )
+        if( riv_thresh >= 0 ):
+            call funcrs(hr, hs)
+        hr_idx = sub_riv_ij2idx( hr )
+        hs_idx = sub_slo_ij2idx( hs )
 
         #******* INFILTRATION (Green Ampt) **********************
         call infilt(hs_idx, gampt_ff_idx, gampt_f_idx)
-        call sub_slo_idx2ij( hs_idx, hs )
-        call sub_slo_idx2ij( gampt_ff_idx, gampt_ff )
-        call sub_slo_idx2ij( gampt_f_idx, gampt_f )
+        hs = sub_slo_idx2ij( hs_idx )
+        gampt_ff = sub_slo_idx2ij( gampt_ff_idx )
+        gampt_f = sub_slo_idx2ij( gampt_f_idx )
 
         #******* SET WATER DEPTH 0 AT DOMAIN = 2 ****************
-        for i = 1, ny
-            for j = 1, nx
-                if( domain(i,j) == 2  ):
-                    sout = sout + hs(i,j) * area
-                    hs(i,j) = 0.0
-                    if( riv(i,j) == 1):
-                        call hr2vr(hr(i, j), riv_ij2idx(i,j), vr_out)
+        for i in range( ny ):
+            for j in range( nx ):
+                if( domain[i,j] == 2 ):
+                    sout = sout + hs[i,j] * area
+                    hs[i,j] = 0.0
+                    if( riv[i,j] == 1):
+                        vr_out = hr2vr(hr[i, j], riv_ij2idx[i,j])
                         sout = sout + vr_out
-                        hr(i,j) = 0.0
+                        hr[i,j] = 0.0
                     #endif
                 #endif
             #enddo
         #enddo
 
         # hs -> hs_idx, hr -> hr_idx, hg -> hg_idx
-        call sub_riv_ij2idx( hr, hr_idx )
-        call sub_slo_ij2idx( hs, hs_idx )
-        call sub_slo_ij2idx( hg, hg_idx )
+        hr_idx = sub_riv_ij2idx( hr )
+        hs_idx = sub_slo_ij2idx( hs )
+        hg_idx = sub_slo_ij2idx( hg )
 
-        print( "max hr: ", maxval(hr), "loc : ", maxloc(hr)
-        print( "max hs: ", maxval(hs), "loc : ", maxloc(hs)
-        if(gw_switch == 1) print( "max hg: ", maxval(hg), "loc : ", maxloc(hg)
+        print( "max hr: ", maxval(hr), "loc : ", maxloc(hr))
+        print( "max hs: ", maxval(hs), "loc : ", maxloc(hs))
+        if(gw_switch == 1):
+            print( "max hg: ", maxval(hg), "loc : ", maxloc(hg))
 
         #******* OUTPUT *****************************************
         # For TSAS Output
         #call RRI_TSAS(t, hs_idx, hr_idx, hg_idx, qs_ave_idx, qr_ave_idx, qg_ave_idx, qp_t_idx)
-        if( hydro_switch == 1 .and. mod(int(time), 3600) == 0 ) write(1012, '(f12.2, 10000f14.5)') time, (qr_ave(hydro_i[k], hydro_j[k]), k = 1, maxhydro)
+        if( hydro_switch == 1 and (int(time) % 3600) == 0 ):
+            f1012.write(time, (qr_ave(hydro_i[k], hydro_j[k]), k = 1, maxhydro))
 
-        if( hydro_switch == 1 .and. mod(int(time), 3600) == 0 ) write(1013, '(f12.2, 10000f14.5)') time, (hr(hydro_i[k], hydro_j[k]), k = 1, maxhydro) # added by T.Sayama on July 1, 2021
+        if( hydro_switch == 1 and (int(time)% 3600) == 0 ):
+            f1013.write(time, (hr(hydro_i[k], hydro_j[k]), k = 1, maxhydro)) # added by T.Sayama on July 1, 2021
 
         # open output files
         if( t == out_next ):
@@ -1229,9 +1233,6 @@ def rri():
         print( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit))
         f1000.write( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg)
     #endif
-
     #enddo
-
     #pause
-
     #end program RRI

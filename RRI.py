@@ -633,7 +633,7 @@ def rri():
         if(t % 1 == 0):
             print( t, "/", maxt )
         #******* RIVER CALCULATION ******************************
-        if( riv_thresh > 0 ):
+        if( riv_thresh >= 0 ):
             # if (riv_thresh < 0) go to 2 # TODO Deal with GOTO 2
             # from time = (t - 1) * dt to t * dt
             time = (t - 1) * dt # (current time)
@@ -880,101 +880,108 @@ def rri():
      qs_ave_idx = qs_ave_idx / float(dt) / 6.0 # modified on ver 1.4.1
 
      #******* GW CALCULATION ******************************
-     if( gw_switch == 0 ) go to 6
+     #if( gw_switch == 0 ) go to 6
+     if( gw_switch != 0):
+        # from time = (t - 1) * dt to t * dt
+        time = (t - 1) * dt  # (current time)
+        # time step is initially set to be "dt"
+        ddt = dt
+        ddt_chk_slo = dt
 
-     # from time = (t - 1) * dt to t * dt
-     time = (t - 1) * dt  # (current time)
-     # time step is initially set to be "dt"
-     ddt = dt
-     ddt_chk_slo = dt
+        qg_ave = 0.0
+        qg_ave_idx = 0.0
 
-     qg_ave = 0.0
-     qg_ave_idx = 0.0
+        # hg -> hg_idx
+        # Memo: slo_ij2idx must be here. 
+        # hg_idx cannot be replaced within the following for loop.
+        hg_idx = sub_slo_ij2idx( hg )
+        #call sub_slo_ij2idx( gampt_ff, gampt_ff_idx ) # modified by T.Sayama on June 10, 2017
 
-     # hg -> hg_idx
-     # Memo: slo_ij2idx must be here. 
-     # hg_idx cannot be replaced within the following for loop.
-     call sub_slo_ij2idx( hg, hg_idx )
-     #call sub_slo_ij2idx( gampt_ff, gampt_ff_idx ) # modified by T.Sayama on June 10, 2017
+        # GW Recharge
+        hg_idx = gw_recharge( hs_idx, gampt_ff_idx )
 
-     # GW Recharge
-     call gw_recharge( hs_idx, gampt_ff_idx, hg_idx )
+        # GW Lose
+        hg_idx = gw_lose( hg_idx )
 
-     # GW Lose
-     call gw_lose( hg_idx )
+        while: #do
 
-     do
+            if( time + ddt > t * dt ):
+                ddt = t * dt - time
 
-      if(time + ddt > t * dt ) ddt = t * dt - time
+            #5 continue
+            #if(errmax > 1.0 and ddt >= ddt_min_slo):
+            while ( errmax > 1.0 and ddt > ddt_min_slo ): # modified on Jan 7, 2021
+                qg_ave_temp_idx[:,:] = 0.0
 
-    5 continue
-      qg_ave_temp_idx[:,:] = 0.0
+                # Adaptive Runge-Kutta 
+                # (1)
+                qg_idx = funcg( hg_idx, fg )
+                hg_temp = hg_idx + b21 * ddt * fg
+                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # Adaptive Runge-Kutta 
-      # (1)
-      call funcg( hg_idx, fg, qg_idx )
-      hg_temp = hg_idx + b21 * ddt * fg
-      qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+                # (2)
+                qg_idx = funcg( hg_temp, kg2 )
+                hg_temp = hg_idx + ddt * (b31 * fg + b32 * kg2)
+                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (2)
-      call funcg( hg_temp, kg2, qg_idx )
-      hg_temp = hg_idx + ddt * (b31 * fg + b32 * kg2)
-      qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+                # (3)
+                qg_idx = funcg( hg_temp, kg3 )
+                hg_temp = hg_idx + ddt * (b41 * fg + b42 * kg2 + b43 * kg3)
+                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (3)
-      call funcg( hg_temp, kg3, qg_idx )
-      hg_temp = hg_idx + ddt * (b41 * fg + b42 * kg2 + b43 * kg3)
-      qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+                # (4)
+                qg_idx = funcg( hg_temp, kg4 )
+                hg_temp = hg_idx + ddt * (b51 * fg + b52 * kg2 + b53 * kg3 + b54 * kg4)
+                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (4)
-      call funcg( hg_temp, kg4, qg_idx )
-      hg_temp = hg_idx + ddt * (b51 * fg + b52 * kg2 + b53 * kg3 + b54 * kg4)
-      qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+                # (5)
+                qg_idx = funcg( hg_temp, kg5 )
+                hg_temp = hg_idx + ddt * (b61 * fg + b62 * kg2 + b63 * kg3 + b64 * kg4 + b65 * kg5)
+                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (5)
-      call funcg( hg_temp, kg5, qg_idx )
-      hg_temp = hg_idx + ddt * (b61 * fg + b62 * kg2 + b63 * kg3 + b64 * kg4 + b65 * kg5)
-      qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+                # (6)
+                qg_idx = funcg( hg_temp, kg6 )
+                hg_temp = hg_idx + ddt * (c1 * fg + c3 * kg3 + c4 * kg4 + c6 * kg6)
+                qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-      # (6)
-      call funcg( hg_temp, kg6, qg_idx )
-      hg_temp = hg_idx + ddt * (c1 * fg + c3 * kg3 + c4 * kg4 + c6 * kg6)
-      qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
+                # (e)
+                hg_err = ddt * (dc1 * fg + dc3 * kg3 + dc4 * kg4 + dc5 * kg5 + dc6 * kg6)
 
-      # (e)
-      hg_err = ddt * (dc1 * fg + dc3 * kg3 + dc4 * kg4 + dc5 * kg5 + dc6 * kg6)
+                # error evaluation
+                hg_err = np.where( domain_slo_idx == 0, 0.0, hg_err)
+                errmax = np.max( hg_err ) / eps
 
-      # error evaluation
-      where( domain_slo_idx == 0 ) hg_err = 0.0
-      errmax = maxval( hg_err ) / eps
+                ##if(errmax > 1.0 and ddt >= ddt_min_slo):
+                #if(errmax > 1.0 and ddt > ddt_min_slo): # modified on Jan 7, 2021
+                # try smaller ddt
+                ddt = np.max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
+                ddt = np.max( ddt, ddt_min_slo ) # added on Jan 7, 2021
+                ddt_chk_slo = ddt
+                print( "shrink (gw): %f, %f, %f " % (ddt, errmax, maxloc( hg_err ))
+                if(ddt == 0):
+                    raise Exception ('stepsize underflow')
+                #go to 5
+            #else:
+            # "time + ddt" should be less than "t * dt"
+            if( time + ddt > t * dt ):
+                ddt = t * dt - time
+            time = time + ddt
+            hg_idx = hg_temp
+            qg_ave_idx = qg_ave_idx + qg_ave_temp_idx
+            #endif
 
-      #if(errmax.gt.1.0 .and. ddt >= ddt_min_slo):
-      if(errmax.gt.1.0 .and. ddt > ddt_min_slo): # modified on Jan 7, 2021
-       # try smaller ddt
-       ddt = max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
-       ddt = max( ddt, ddt_min_slo ) # added on Jan 7, 2021
-       ddt_chk_slo = ddt
-       print( "shrink (gw): ", ddt, errmax, maxloc( hg_err )
-       if(ddt == 0) stop 'stepsize underflow'
-       go to 5
-      else
-       # "time + ddt" should be less than "t * dt"
-       if(time + ddt > t * dt ) ddt = t * dt - time
-       time = time + ddt
-       hg_idx = hg_temp
-       qg_ave_idx = qg_ave_idx + qg_ave_temp_idx
-      #endif
+            if( time >= t * dt ):
+                break # finish for this timestep
+        #end while do
 
-      if(time.ge.t * dt) exit # finish for this timestep
-     #enddo
-     qg_ave_idx = qg_ave_idx / float(dt) / 6.0
+        qg_ave_idx = qg_ave_idx / float(dt) / 6.0
 
-     time = t * dt
+        time = t * dt
 
-     #******* GW Exfiltration ********************************
-     call gw_exfilt( hs_idx, gampt_ff_idx, hg_idx )
-
-    6 continue
+        #******* GW Exfiltration ********************************
+        hg_idx = gw_exfilt( hs_idx, gampt_ff_idx )
+     #ENDIF if( gw_switch == 0 ) go to 6
+     #6 continue
 
      #******* Evapotranspiration *****************************
      if( evp_switch != 0 ) call evp(hs_idx, gampt_ff_idx)

@@ -16,7 +16,6 @@ def evp( evp_switch, itemp, jtemp, t_evp, evp_i, evp_j, qe_t, slo_count, hs_idx,
     :param slo_count: ???
     :param hs_idx:
     :param gampt_ff_idx:
-    :return: >>>NO EXPLICIT RETURN<<<
     :return: aevp
     :return: aevp_tsas
     :return: hs_idx

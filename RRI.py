@@ -906,7 +906,7 @@ def rri():
             # GW Lose
             hg_idx = gw_lose( hg_idx )
 
-            while: #do
+            while( time < t * dt ):
                 if( time + ddt > t * dt ):
                     ddt = t * dt - time
                 #5 continue
@@ -925,7 +925,6 @@ def rri():
                     hg_temp = hg_idx + ddt * (b31 * fg + b32 * kg2)
                     qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
-    :return: fs_idx
                     # (3)
                     qg_idx = funcg( hg_temp, kg3 )
                     hg_temp = hg_idx + ddt * (b41 * fg + b42 * kg2 + b43 * kg3)
@@ -959,7 +958,7 @@ def rri():
                     ddt = np.max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
                     ddt = np.max( ddt, ddt_min_slo ) # added on Jan 7, 2021
                     ddt_chk_slo = ddt
-                    print( "shrink (gw): %f, %f, %f " % (ddt, errmax, maxloc( hg_err ))
+                    print( "shrink (gw): %f, %f, %f " % (ddt, errmax, maxloc( hg_err )))
                     if(ddt == 0):
                         raise Exception ('stepsize underflow')
                     #go to 5
@@ -972,8 +971,6 @@ def rri():
                 qg_ave_idx = qg_ave_idx + qg_ave_temp_idx
                 #endif
 
-                if( time >= t * dt ):
-                    break # finish for this timestep
             #end while do
 
             qg_ave_idx = qg_ave_idx / float(dt) / 6.0
@@ -987,7 +984,8 @@ def rri():
 
         #******* Evapotranspiration *****************************
         if( evp_switch != 0 ):
-            call evp(hs_idx, gampt_ff_idx)
+            #call evp(hs_idx, gampt_ff_idx)
+            aevp, aevp_tsas, hs_idx, gampt_ff_idx, aevp_sum, pevp_sum = evp( evp_switch, itemp, jtemp, t_evp, evp_i, evp_j, qe_t, slo_count, hs_idx, gampt_ff_idx, aevp, aevp_tsas, aevp_sum, tevp_sum )
 
         # hs_idx -> hs
         hs = sub_slo_idx2ij( hs_idx )

@@ -3,6 +3,23 @@
 def funcrs( hr, hs )
     """
     River and slope interaction
+
+    :param ny:
+    :param nx:
+    :param domain:
+    :param riv:
+    :param hs:
+    :param hr:
+    :param depth:
+    :param riv_ij2idx:
+    :param len_riv_idx:
+    :param height:
+    :param dt:
+    :param area:
+    :param k:
+    :param qrs:
+
+    :return:
     """
     #real(8) hr(ny, nx), hs(ny, nx)
     #real(8) hrs # discharge amount from slope to river [m/s]
@@ -31,7 +48,7 @@ def funcrs( hr, hs )
                     hrs = hs[i, j]
                 hs[i, j] = hs[i, j] - hrs
                 #hr[i, j] = hr[i, j] + hrs / area_ratio[i, j]
-                call hr_update(hr[i, j], hrs * area, k, hr_new) # add v1.4
+                hr_new = hr_update(hr[i, j], hrs * area, k) # add v1.4
                 hr[i, j] = hr_new # add v1.4
                 qrs[i, j] = hrs
                 # avoid the situation of hr_top > hs_top
@@ -39,12 +56,12 @@ def funcrs( hr, hs )
                 hr_top = hr[i, j] - depth[i, j]
                 if( hr_top >= -0.000010 and hr_top > hs_top ):
                     for count in range( 10 ):
-                        call sec_h2b(hr[i, j], k, b)
+                        b = sec_h2b(hr[i, j], k)
                         ar = len * b / area
                         hrs = ( hs_top - hr_top ) / ( 1.0 + 1.0 / ar )
                         hs[i, j] = hs[i, j] - hrs
                         #hr[i, j] = hr[i, j] + hrs / area_ratio[i, j]
-                        call hr_update(hr[i, j], hrs * area, k, hr_new) # add v1.4
+                        hr_new = hr_update(hr[i, j], hrs * area, k) # add v1.4
                         hr[i, j] = hr_new # add v1.4
                         qrs[i, j] = qrs[i, j] + hrs
                         if( abs(hs[i, j] - (hr[i, j] - depth[i, j])) < 0.000010 ):
@@ -72,15 +89,15 @@ def funcrs( hr, hs )
                     #hrs = - mu3 * h2 * sqrt( 2.0 * 9.810 * (h1 - h2) ) * dt * length / area # modified v1.4
                     hrs = - mu3 * h2 * sqrt( 2.0 * 9.810 * (h1 - h2) ) * dt * length * 2.0 / area # modified v1.4.2.4
                 #endif
-                call sec_h2b(hr[i, j], k, b)
+                b = sec_h2b(hr[i, j], k)
                 ar = length * b / area
-                if( abs(hrs / ar) > (hr_top-height[i, j]) ):
-                    hrs = - (hr_top-height[i, j]) * ar
+                if( abs( hrs / ar ) > ( hr_top - height[i, j] )):
+                    hrs = - (hr_top - height[i, j]) * ar
                     #if( abs(hrs / area_ratio[i, j]) .gt. (hr_top-height[i, j]) ) hrs = - (hr_top-height[i, j]) * area_ratio[i, j]
                     qrs[i, j] = hrs
                     hs[i, j] = hs[i, j] - hrs
                     #hr[i, j] = hr[i, j] + hrs / area_ratio[i, j]
-                    call hr_update(hr[i, j], hrs * area, k, hr_new) # add v1.4
+                    hr_new = hr_update(hr[i, j], hrs * area, k) # add v1.4
                     hr[i, j] = hr_new # add v1.4
                     # avoid the situation of hs_top > hr_top
                     hs_top = hs[i, j]
@@ -88,15 +105,15 @@ def funcrs( hr, hs )
                     #if( hr_top > -0.000010 and hs_top > hr_top ): # modified from v1.4 (‚±‚±‚Í‚Ç‚Á‚¿‚©H)
                     if( hs_top > hr_top ):
                         for count in range( 10 ):
-                            call sec_h2b(hr[i, j], k, b)
+                            b = sec_h2b(hr[i, j], k)
                             ar = len * b / area
                             hrs = ( hs_top - hr_top ) / ( 1.0 + 1.0 / ar )
                             hs[i, j] = hs[i, j] - hrs
                             #hr[i, j] = hr[i, j] + hrs / area_ratio[i, j]
-                            call hr_update(hr[i, j], hrs * area, k, hr_new) # add v1.4
+                            hr_new = hr_update(hr[i, j], hrs * area, k) # add v1.4
                             hr[i, j] = hr_new # add v1.4
                             qrs[i, j] = qrs[i, j] + hrs
-                            if( abs(hs[i, j] - (hr[i, j] - depth[i, j])) .lt. 0.000010 ):
+                            if( abs(hs[i, j] - (hr[i, j] - depth[i, j])) < 0.000010 ):
                                 break
                             hs_top = hs[i, j]
                             hr_top = hr[i, j] - depth[i, j]
@@ -121,19 +138,19 @@ def funcrs( hr, hs )
                     qrs[i, j] = hrs
                     hs[i, j] = hs[i, j] - hrs
                     #hr[i, j] = hr[i, j] + hrs / area_ratio[i, j]
-                    call hr_update(hr[i, j], hrs * area, k, hr_new) # add v1.4
+                    hr_new = hr_update(hr[i, j], hrs * area, k) # add v1.4
                     hr[i, j] = hr_new # add v1.4
                     # avoid the situation of hr_top > hs_top
                     hs_top = hs[i, j]
                     hr_top = hr[i, j] - depth[i, j]
                     if( hr_top >= -0.000010 and hr_top > hs_top ):
                         for count in range( 10 ):
-                            call sec_h2b(hr[i, j], k, b)
+                            b = sec_h2b(hr[i, j], k)
                             ar = length * b / area
                             hrs = ( hs_top - hr_top ) / ( 1.0 + 1.0 / ar )
                             hs[i, j] = hs[i, j] - hrs
                             #hr[i, j] = hr[i, j] + hrs / area_ratio[i, j]
-                            call hr_update(hr[i, j], hrs * area, k, hr_new) # add v1.4
+                            hr_new = hr_update(hr[i, j], hrs * area, k) # add v1.4
                             hr[i, j] = hr_new # add v1.4
                             qrs[i, j] = qrs[i, j] + hrs
                             if( abs(hs[i, j] - (hr[i, j] - depth[i, j])) < 0.000010 ):

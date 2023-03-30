@@ -1208,7 +1208,17 @@ def rri():
 
             if( tec_switch == 1 ):
                 if (tt == 1):
-                    call Tecout_alloc(nx, ny, 4)
+                    #call Tecout_alloc(nx, ny, 4)
+                    iMX = ny + 1
+                    jMX = nx + 1
+                    ValNum = ValNum_temp
+                    X = np.zeros(jMX)
+                    Y = np.zeros(iMX)
+                    Z = np.zeros((iMX,jMX))
+                    Z_buf = np.zeros((ny,nx))
+                    SufHmax = np.zeros((iMX-1,jMX-1))
+                    SufHmax.fill(-0.10)
+                    f6 = open( tecfile )
                     call Tecout_mkGrid(dx, dy, zs)
                     call Tecout_write_initialize(tt, width, depth, height, area_ratio)
                 #endif

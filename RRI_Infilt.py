@@ -1,6 +1,4 @@
-from globals_vars import *
-
-def infilt(hs_idx, gampt_ff_idx, gampt_f_idx):
+def infilt(hs_idx, gampt_ff_idx, gampt_f_idx, slo_count, ksv_idx, faif_idx, gamaa_idx):
     """
     :Description: infiltration
 

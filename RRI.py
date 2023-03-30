@@ -999,12 +999,14 @@ def rri():
 
         #******* RIVER-SLOPE INTERACTIONS ***********************
         if( riv_thresh >= 0 ):
-            call funcrs(hr, hs)
+            #call funcrs(hr, hs)
+            qrs, hr, hs = funcrs( hr, hs, ny, nx, domain, riv, depth, riv_ij2idx, len_riv_idx, height, dt, area, k, qrs )
         hr_idx = sub_riv_ij2idx( hr )
         hs_idx = sub_slo_ij2idx( hs )
 
         #******* INFILTRATION (Green Ampt) **********************
-        call infilt(hs_idx, gampt_ff_idx, gampt_f_idx)
+        #call infilt(hs_idx, gampt_ff_idx, gampt_f_idx)
+        hs_idx, gampt_ff_idx, gampt_f_idx = infilt(hs_idx, gampt_ff_idx, gampt_f_idx, slo_count, ksv_idx, faif_idx, gamaa_idx)
         hs = sub_slo_idx2ij( hs_idx )
         gampt_ff = sub_slo_idx2ij( gampt_ff_idx )
         gampt_f = sub_slo_idx2ij( gampt_f_idx )
@@ -1038,10 +1040,15 @@ def rri():
         # For TSAS Output
         #call RRI_TSAS(t, hs_idx, hr_idx, hg_idx, qs_ave_idx, qr_ave_idx, qg_ave_idx, qp_t_idx)
         if( hydro_switch == 1 and (int(time) % 3600) == 0 ):
-            f1012.write(time, (qr_ave(hydro_i[k], hydro_j[k]), k = 1, maxhydro))
-
-        if( hydro_switch == 1 and (int(time)% 3600) == 0 ):
-            f1013.write(time, (hr(hydro_i[k], hydro_j[k]), k = 1, maxhydro)) # added by T.Sayama on July 1, 2021
+            f1012.write(time)
+            f1013.write(time)
+            for k in range( maxhydro ):
+                f1012.write(",")
+                f1012.write(qr_ave[hydro_i[k], hydro_j[k]])
+                f1013.write(",")
+                f1013.write(hr[hydro_i[k], hydro_j[k]]) # added by T.Sayama on July 1, 2021
+            f1012.write("\n")
+            f1013.write("\n")
 
         # open output files
         if( t == out_next ):
@@ -1049,8 +1056,7 @@ def rri():
             tt = tt + 1
             out_next = round((tt+1) * out_dt)
             t_char = int2char(tt)
-            where(domain == 0):
-                hs = -0.10
+            hs = np.where(domain == 0, -0.10, hs)
             if(riv_thresh >= 0):
                 hr = np.where(domain == 0, -0.10, hr)
             if(riv_thresh >= 0):
@@ -1097,25 +1103,44 @@ def rri():
             if(outswitch_gampt_ff == 2):
                 ofile_gampt_ff = trim(outfile_gampt_ff) + trim(t_char) + ".bin"
 
-            if(outswitch_hs == 1) open( 100, file = ofile_hs )
-            if(outswitch_hr == 1) open( 101, file = ofile_hr )
-            if(outswitch_hg == 1) open( 102, file = ofile_hg )
-            if(outswitch_qr == 1) open( 103, file = ofile_qr )
-            if(outswitch_qu == 1) open( 104, file = ofile_qu )
-            if(outswitch_qv == 1) open( 105, file = ofile_qv )
-            if(outswitch_gu == 1) open( 106, file = ofile_gu )
-            if(outswitch_gv == 1) open( 107, file = ofile_gv )
-            if(outswitch_gampt_ff == 1) open( 108, file = ofile_gampt_ff )
+            if(outswitch_hs == 1):
+                f100 = open( ofile_hs )
+            if(outswitch_hr == 1):
+                f101 = open( ofile_hr )
+            if(outswitch_hg == 1):
+                f102 = open( ofile_hg )
+            if(outswitch_qr == 1):
+                f103 = open( ofile_qr )
+            if(outswitch_qu == 1):
+                f104 = open( ofile_qu )
+            if(outswitch_qv == 1):
+                f105 = open( ofile_qv )
+            if(outswitch_gu == 1):
+                f106 = open( ofile_gu )
+            if(outswitch_gv == 1):
+                f107 = open( ofile_gv )
+            if(outswitch_gampt_ff == 1):
+                f108 = open( ofile_gampt_ff )
 
-            if(outswitch_hs == 2) open( 100, file = ofile_hs, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_hr == 2) open( 101, file = ofile_hr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_hg == 2) open( 102, file = ofile_hr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_qr == 2) open( 103, file = ofile_qr, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_qu == 2) open( 104, file = ofile_qu, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_qv == 2) open( 105, file = ofile_qv, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_gu == 2) open( 106, file = ofile_gu, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_gv == 2) open( 107, file = ofile_gv, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
-            if(outswitch_gampt_ff == 2) open( 108, file = ofile_gampt_ff, form = 'unformatted', access = 'direct', recl = nx*ny*4 )
+            # This should open in binary format
+            if(outswitch_hs == 2):
+                f100 = open( ofile_hs, "wb" )
+            if(outswitch_hr == 2):
+                f101 = open( ofile_hr, "wb" )
+            if(outswitch_hg == 2):
+                f102 = open( ofile_hr, "wb" )
+            if(outswitch_qr == 2):
+                f103 = open( ofile_qr, "wb" )
+            if(outswitch_qu == 2):
+                f104 = open( ofile_qu, "wb" )
+            if(outswitch_qv == 2):
+                f105 = open( ofile_qv, "wb" )
+            if(outswitch_gu == 2):
+                f106 = open( ofile_gu, "wb" )
+            if(outswitch_gv == 2):
+                f107 = open( ofile_gv, "wb" )
+            if(outswitch_gampt_ff == 2):
+                f108 = open( ofile_gampt_ff, "wb" )
 
             # TODO output (ascii)
             if(outswitch_hs == 1):

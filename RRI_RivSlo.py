@@ -1,6 +1,6 @@
 # RRI_RivSlo
 
-def funcrs( hr, hs )
+def funcrs( hr, hs, ny, nx, domain, riv, depth, riv_ij2idx, len_riv_idx, height, dt, area, k, qrs ):
     """
     River and slope interaction
 
@@ -19,7 +19,9 @@ def funcrs( hr, hs )
     :param k:
     :param qrs:
 
-    :return:
+    :return: qrs
+    :return: hr
+    :return: hs
     """
     #real(8) hr(ny, nx), hs(ny, nx)
     #real(8) hrs # discharge amount from slope to river [m/s]
@@ -167,4 +169,5 @@ def funcrs( hr, hs )
             qrs[i, j] = qrs[i, j] / float(dt) # [m/s]
         #enddo
     #enddo
+    reuturn(qrs, hr, hs)
 #end def funcrs

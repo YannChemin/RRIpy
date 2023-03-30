@@ -1,19 +1,48 @@
 # RRI_Slope
 
-def funcs(hs_idx, qp_t_idx, fs_idx, qs_idx ):
+def funcs(hs_idx, qp_t_idx, fs_idx, qs_idx, slo_count, zb_slo_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, bound_slo_disc_switch, tt_max_bound_slo_disc, t_bound_slo_disc, time, ddt, bound_slo_disc_idx, direc, dif_slo_idx):
     """
     Variable definition (slope)
 
-    :param :
-    :param :
-    :param :
-    :param :
+    :param hs_idx:
+    :param qp_t_idx:
+    :param fs_idx:
+    :param qs_idx:
+    :param slo_count: 
+    :param zb_slo_idx:
+    :param ns_slo_idx:
+    :param ka_idx:
+    :param da_idx:
+    :param dm_idx:
+    :param beta_idx:
+    :param dif_slo_idx:
+    :param lmax:
+    :param down_slo_idx:
+    :param down_slo_1d_idx:
+    :param dis_slo_idx:
+    :param dis_slo_1d_idx:
+    :param len_slo_idx:
+    :param len_slo_1d_idx:
+    :param lev_p:
+    :param lev_n:
+    :param area:
+    :param bound_slo_disc_switch:
+    :param tt_max_bound_slo_disc:
+    :param t_bound_slo_disc:
+    :param time:
+    :param ddt:
+    :param bound_slo_disc_idx:
+    :param direc:
+    :param dif_slo_idx:
+
+    :return: fs_idx
+    :return: qs_idx
     """
     #real(8) hs_idx(slo_count), qp_t_idx(slo_count), fs_idx(slo_count)
     #real(8) qs_idx(i4, slo_count)
     fs_idx.fill(0.0)
     qs_idx.fill(0.0)
-    qs_idx = qs_calc(hs_idx)
+    qs_idx = qs_calc(slo_count, zb_slo_idx, hs_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, qs_idx)
     # boundary condition for slope (discharge boundary)
     if( bound_slo_disc_switch >= 1 ):
         #itemp = time / dt_bound_slo + 1
@@ -26,28 +55,28 @@ def funcs(hs_idx, qp_t_idx, fs_idx, qs_idx ):
             if( bound_slo_disc_idx[itemp,k] <= -100.0 ):
                 continue # not boundary
             # right
-            if( direc(slo_idx2i[k], slo_idx2j[k])==1 ):
+            if( direc[slo_idx2i[k], slo_idx2j[k]] == 1 ):
                 qs_idx[1,k] = bound_slo_disc_idx[itemp,k] / area
             # right down
-            else if( direc(slo_idx2i[k], slo_idx2j[k])==2 ):
+            else if( direc[slo_idx2i[k], slo_idx2j[k]] == 2 ):
                 qs_idx[3,k] = bound_slo_disc_idx[itemp,k] / area
             # down
-            else if( direc(slo_idx2i[k], slo_idx2j[k])==4 ):
+            else if( direc[slo_idx2i[k], slo_idx2j[k]] == 4 ):
                 qs_idx[2,k] = bound_slo_disc_idx[itemp,k] / area
             # left down
-            else if( direc(slo_idx2i[k], slo_idx2j[k])==8 ):
+            else if( direc[slo_idx2i[k], slo_idx2j[k]] == 8 ):
                 qs_idx[4,k] = bound_slo_disc_idx[itemp,k] / area
             # left
-            else if( direc(slo_idx2i[k], slo_idx2j[k])==16 ):
+            else if( direc[slo_idx2i[k], slo_idx2j[k]] == 16 ):
                 qs_idx[1,k] = - bound_slo_disc_idx[itemp,k] / area
             # left up
-            else if( direc(slo_idx2i[k], slo_idx2j[k])==32 ):
+            else if( direc[slo_idx2i[k], slo_idx2j[k]] == 32 ):
                 qs_idx[3,k] = - bound_slo_disc_idx[itemp,k] / area
             # up
-            else if( direc(slo_idx2i[k], slo_idx2j[k])==64 ):
+            else if( direc[slo_idx2i[k], slo_idx2j[k]] == 64 ):
                 qs_idx[2,k] = - bound_slo_disc_idx[itemp,k] / area
             # right up
-            else if( direc(slo_idx2i[k], slo_idx2j[k])==128 ):
+            else if( direc[slo_idx2i[k], slo_idx2j[k]] == 128 ):
                 qs_idx[4,k] = - bound_slo_disc_idx[itemp,k] / area
             #endif
         #enddo
@@ -55,8 +84,8 @@ def funcs(hs_idx, qp_t_idx, fs_idx, qs_idx ):
     # qs_idx > 0 --> discharge flowing out from a cell
 
     #$omp parallel do
-    do k = 1, slo_count
-        fs_idx[k] = qp_t_idx[k] - (qs_idx(1,k) + qs_idx(2,k) + qs_idx(3,k) + qs_idx(4,k))
+    for k in range( slo_count ):
+        fs_idx[k] = qp_t_idx[k] - (qs_idx[1,k] + qs_idx[2,k] + qs_idx[3,k] + qs_idx[4,k])
     #enddo
     #$omp end parallel do
 
@@ -72,7 +101,7 @@ def funcs(hs_idx, qp_t_idx, fs_idx, qs_idx ):
             fs_idx[kk] = fs_idx[kk] + qs_idx[l, k]
         #enddo
     #enddo
-    return(fs_idx)
+    return(fs_idx, qs_idx)
 #enddef funcs
 
 
@@ -100,7 +129,6 @@ def qs_calc(slo_count, zb_slo_idx, hs_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, b
     :param lev_n:
     :param area:
     :param qs_idx:
-
 
     :return: qs_idx 
     """
@@ -242,9 +270,16 @@ def hq(ns_p, ka_p, da_p, dm_p, b_p, h, dh, length, area):
 #enddef hq
 
 
-def h2lev(h, k, lev)
+def h2lev(h, k)
     """
     Water depth (h) to actual water level (lev)
+
+    :param soildepth_idx:
+    :param gammaa_idx:
+    :param h:
+    :param rho:
+
+    :return: lev
     """
     #real(8) h, lev
     #real(8) rho
@@ -260,6 +295,6 @@ def h2lev(h, k, lev)
         if(soildepth_idx[k] > 0.0 ):
             rho = da_temp / soildepth_idx[k]
         lev = h / rho
-#endif
-
+    #endif
+    return(lev)
 #enddef h2lev

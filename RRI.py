@@ -823,52 +823,60 @@ def rri():
                     qs_ave_temp_idx.fill(0.0)
                     # Adaptive Runge-Kutta 
                     # (1)
-                    call funcs( hs_idx, qp_t_idx, fs, qs_idx )
+                    #call funcs( hs_idx, qp_t_idx, fs, qs_idx )
+                    fs, qs_idx = funcs(hs_idx, qp_t_idx, fs, qs_idx, slo_count, zb_slo_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, bound_slo_disc_switch, tt_max_bound_slo_disc, t_bound_slo_disc, time, ddt, bound_slo_disc_idx, direc, dif_slo_idx)
                     hs_temp = hs_idx + b21 * ddt * fs
-                    where(hs_temp < 0) hs_temp = 0.0
+                    hs_temp = np.where(hs_temp < 0, 0.0, hs_temp)
                     qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
                     # (2)
-                    call funcs( hs_temp, qp_t_idx, ks2, qs_idx )
+                    #call funcs( hs_temp, qp_t_idx, ks2, qs_idx )
+                    ks2, qs_idx = funcs(hs_temp, qp_t_idx, ks2, qs_idx, slo_count, zb_slo_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, bound_slo_disc_switch, tt_max_bound_slo_disc, t_bound_slo_disc, time, ddt, bound_slo_disc_idx, direc, dif_slo_idx)
                     hs_temp = hs_idx + ddt * (b31 * fs + b32 * ks2)
-                    where(hs_temp < 0) hs_temp = 0.0
+                    hs_temp = np.where(hs_temp < 0, 0.0, hs_temp)
                     qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
                     # (3)
-                    call funcs( hs_temp, qp_t_idx, ks3, qs_idx )
+                    #call funcs( hs_temp, qp_t_idx, ks3, qs_idx )
+                    ks3, qs_idx = funcs(hs_temp, qp_t_idx, ks3, qs_idx, slo_count, zb_slo_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, bound_slo_disc_switch, tt_max_bound_slo_disc, t_bound_slo_disc, time, ddt, bound_slo_disc_idx, direc, dif_slo_idx)
                     hs_temp = hs_idx + ddt * (b41 * fs + b42 * ks2 + b43 * ks3)
-                    where(hs_temp < 0) hs_temp = 0.0
+                    hs_temp = np.where(hs_temp < 0, 0.0, hs_temp)
                     qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
                     # (4)
-                    call funcs( hs_temp, qp_t_idx, ks4, qs_idx )
+                    #call funcs( hs_temp, qp_t_idx, ks4, qs_idx )
+                    ks4, qs_idx = funcs(hs_temp, qp_t_idx, ks4, qs_idx, slo_count, zb_slo_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, bound_slo_disc_switch, tt_max_bound_slo_disc, t_bound_slo_disc, time, ddt, bound_slo_disc_idx, direc, dif_slo_idx)
                     hs_temp = hs_idx + ddt * (b51 * fs + b52 * ks2 + b53 * ks3 + b54 * ks4)
-                    where(hs_temp < 0) hs_temp = 0.0
+                    hs_temp = np.where(hs_temp < 0, 0.0, hs_temp)
                     qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
                     # (5)
-                    call funcs( hs_temp, qp_t_idx, ks5, qs_idx )
+                    #call funcs( hs_temp, qp_t_idx, ks5, qs_idx )
+                    ks5, qs_idx = funcs(hs_temp, qp_t_idx, ks5, qs_idx, slo_count, zb_slo_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, bound_slo_disc_switch, tt_max_bound_slo_disc, t_bound_slo_disc, time, ddt, bound_slo_disc_idx, direc, dif_slo_idx)
                     hs_temp = hs_idx + ddt * (b61 * fs + b62 * ks2 + b63 * ks3 + b64 * ks4 + b65 * ks5)
-                    where(hs_temp < 0) hs_temp = 0.0
+                    hs_temp = np.where(hs_temp < 0, 0.0, hs_temp)
                     qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
                     # (6)
-                    call funcs( hs_temp, qp_t_idx, ks6, qs_idx )
+                    #call funcs( hs_temp, qp_t_idx, ks6, qs_idx )
+                    ks6, qs_idx = funcs(hs_temp, qp_t_idx, ks6, qs_idx, slo_count, zb_slo_idx, ns_slo_idx, ka_idx, da_idx, dm_idx, beta_idx, dif_slo_idx, lmax, down_slo_idx, down_slo_1d_idx, dis_slo_idx, dis_slo_1d_idx, len_slo_idx, len_slo_1d_idx, lev_p, lev_n, area, bound_slo_disc_switch, tt_max_bound_slo_disc, t_bound_slo_disc, time, ddt, bound_slo_disc_idx, direc, dif_slo_idx)
                     hs_temp = hs_idx + ddt * (c1 * fs + c3 * ks3 + c4 * ks4 + c6 * ks6)
-                    where(hs_temp < 0) hs_temp = 0.0
+                    hs_temp = np.where(hs_temp < 0, 0.0, hs_temp)
                     qs_ave_temp_idx = qs_ave_temp_idx + qs_idx * ddt
                     # (e)
                     hs_err = ddt * (dc1 * fs + dc3 * ks3 + dc4 * ks4 + dc5 * ks5 + dc6 * ks6)
                     # error evaluation
-                    where( domain_slo_idx == 0 ) hs_err = 0.0
+                    hs_err = np.where( domain_slo_idx == 0, 0.0, hs_err)
                     errmax = maxval( hs_err ) / eps
                 #else:
                 # "time + ddt" should be less than "t * dt"
-                if(time + ddt > t * dt ) ddt = t * dt - time
+                if(time + ddt > t * dt ):
+                    ddt = t * dt - time
                 time = time + ddt
                 hs_idx = hs_temp
                 qs_ave_idx = qs_ave_idx + qs_ave_temp_idx
                 #endif
 
                 # cumulative rainfall
-                for i = 1, ny
-                    for j = 1, nx
-                        if( domain[i,j] != 0 ) rain_sum = rain_sum + float(qp_t[i,j] * area * ddt)
+                for i in range( ny ):
+                    for j in range( nx ):
+                        if( domain[i,j] != 0 ):
+                            rain_sum = rain_sum + float(qp_t[i,j] * area * ddt)
                     #enddo
                 #enddo
             #enddo
@@ -917,6 +925,7 @@ def rri():
                     hg_temp = hg_idx + ddt * (b31 * fg + b32 * kg2)
                     qg_ave_temp_idx = qg_ave_temp_idx + qg_idx * ddt
 
+    :return: fs_idx
                     # (3)
                     qg_idx = funcg( hg_temp, kg3 )
                     hg_temp = hg_idx + ddt * (b41 * fg + b42 * kg2 + b43 * kg3)

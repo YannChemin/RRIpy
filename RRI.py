@@ -1219,10 +1219,13 @@ def rri():
                     SufHmax = np.zeros((iMX-1,jMX-1))
                     SufHmax.fill(-0.10)
                     f6 = open( tecfile )
-                    call Tecout_mkGrid(dx, dy, zs)
-                    call Tecout_write_initialize(tt, width, depth, height, area_ratio)
+                    #call Tecout_mkGrid(dx, dy, zs)
+                    Z = Tecout_mkGrid(dx, dy, zs, X, Y, Y_temp, Z_buf, Z_temp)
+                    #call Tecout_write_initialize(tt, width, depth, height, area_ratio)
+                    err = Tecout_write_initialize( f6, tt, iMX, jMX, X, Y, Z, width, depth, height, area_ratio)
                 #endif
-                call Tecout_write(tt, qp_t, hr, qr_ave, hs, area)
+                #call Tecout_write(tt, qp_t, hr, qr_ave, hs, area)
+                err = Tecout_write( tt, f6, iMX, jMX, qp_t, hr, qr_ave, hs, area, SufHmax )
             #endif
 
             # For dt_check

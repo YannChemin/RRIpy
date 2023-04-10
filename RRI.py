@@ -3,6 +3,7 @@ from RRI_Sub import *
 from RRI_Dam import *
 from RRI_GW import *
 from RRI_Section import *
+from RRI_Riv import *
 
 def rri():
     """
@@ -822,47 +823,53 @@ def rri():
                     ddt = max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
                     ddt = max( ddt, ddt_min_riv ) # added on Jan 7, 2021
                     ddt_chk_riv = ddt
-                    print( "shrink (riv): %f, %f, %f" % (ddt, errmax, maxloc( vr_err )))
+                    print( "shrink (riv): %f, %f, %f" % (ddt, errmax, np.max( vr_err )))
                     if(ddt == 0):
                         raise Exception ('stepsize underflow')
                     if(dam_switch == 1 ):
-                        dam_vol_temp[:] = 0.0
+                        dam_vol_temp.fill( 0.0 )
                     #go to 1
-                    qr_ave_temp_idx[:] = 0.0
+                    qr_ave_temp_idx.fill( 0.0 )
 
                     # Adaptive Runge-Kutta 
                     # (1)
-                    fr, qr_idx = funcr( riv_count, vr_idx )
+                    #fr, qr_idx = funcr( riv_count, vr_idx )
+                    fr, qr_idx = funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx )
                     vr_temp = vr_idx + b21 * ddt * fr
                     vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (2)
-                    kr2, qr_idx = funcr( riv_count, vr_temp )
+                    #kr2, qr_idx = funcr( riv_count, vr_temp )
+                    kr2, qr_idx = funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx )
                     vr_temp = vr_idx + ddt * (b31 * fr + b32 * kr2)
                     vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (3)
-                    kr3, qr_idx = funcr( riv_count, vr_temp )
+                    #kr3, qr_idx = funcr( riv_count, vr_temp )
+                    kr3, qr_idx = funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx )
                     vr_temp = vr_idx + ddt * (b41 * fr + b42 * kr2 + b43 * kr3)
                     vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (4)
-                    kr4, qr_idx = funcr( riv_count, vr_temp )
+                    #kr4, qr_idx = funcr( riv_count, vr_temp )
+                    kr4, qr_idx = funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx )
                     vr_temp = vr_idx + ddt * (b51 * fr + b52 * kr2 + b53 * kr3 + b54 * kr4)
                     vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (5)
-                    kr5, qr_idx = funcr( riv_count, vr_temp )
+                    #kr5, qr_idx = funcr( riv_count, vr_temp )
+                    kr5, qr_idx = funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx )
                     vr_temp = vr_idx + ddt * (b61 * fr + b62 * kr2 + b63 * kr3 + b64 * kr4 + b65 * kr5)
                     vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt
 
                     # (6)
-                    kr6, qr_idx = funcr( riv_count, vr_temp )
+                    #kr6, qr_idx = funcr( riv_count, vr_temp )
+                    kr6, qr_idx = funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx )
                     vr_temp = vr_idx + ddt * (c1 * fr + c3 * kr3 + c4 * kr4 + c6 * kr6)
                     vr_temp = np.where(vr_temp < 0, 0.0, vr_temp)
                     qr_ave_temp_idx = qr_ave_temp_idx + qr_idx * ddt

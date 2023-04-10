@@ -1,4 +1,5 @@
 # RRI_Riv.f90
+import copy 
 
 def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx ):
     """
@@ -49,16 +50,17 @@ def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wl
     qr_idx = qr_calc(hr_idx)
     if( div_switch == 1 ):
         #call RRI_Div(qr_idx, hr_idx, qr_div_idx)
-        ? = RRI_Div(qr_idx, hr_idx, qr_div_idx)
-
+        qr_div_idx = RRI_Div(qr_idx, hr_idx, qr_div_idx, ns_river, w, hw, k, sec_map_idx, sec_div, sec_hr, sec_peri, sec_ns_river, sec_b, sec_area)
 
     # dam control
     if( dam_switch == 1 ):
-        call dam_prepare(qr_idx) # calculate inflow to dam
+        #call dam_prepare(qr_idx) # calculate inflow to dam
+        dam_qin = copy.deepcopy(qr_idx)
         for i in range( dam_num ):
             if( dam_volmax[i] > 0.0 ):
                 # dam
-                call dam_operation( dam_loc[i] )
+                #call dam_operation( dam_loc[i] )
+                dam_qout, dam_vol_temp = dam_operation(dam_qout, damflg, k, dam_maxfloodq, dam_rate, dam_qin, dam_floodq, dam_vol, ddt, dam_state, dam_vol_temp)
                 qr_idx[ int(dam_loc[i]) ] = dam_qout[i]
                 qr_sum_idx[ int(dam_loc[i]) ] = qr_sum_idx[ int(dam_loc[i]) ] + dam_qin[ int(dam_loc[i]) ] - dam_qout[i]
             elif( dam_volmax[i] == 0.0 ):
@@ -70,8 +72,9 @@ def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wl
                 # water gate (dam_volmax[i] < 0) # added on Aug 7, 2021 by T.Sayama
                 k = dam_loc[i]
                 kk = down_riv_idx[k]
-                call gate_operation( dam_loc[i], hr_idx[k], hr_idx[kk] )
-                qr_idx( int(dam_loc[i]) ) = dam_qout[i]
+                #call gate_operation( dam_loc[i], hr_idx[k], hr_idx[kk] )
+                dam_qout = gate_operation(dam_qout, damflg, k, down_riv_idx, dam_qin, dam_floodq)
+                qr_idx[ int(dam_loc[i]) ] = dam_qout[i]
                 #qr_sum_idx( dam_loc[i] ) = qr_sum_idx( dam_loc[i] ) + dam_qin( dam_loc[i] ) - dam_qout[i]
             #endif
         #enddo
@@ -186,7 +189,7 @@ def qr_calc(hr_idx, domain_riv_idx, zb_riv_idx, dif_riv_idx, dis_riv_idx, down_r
         # ver 1.4.2 mod by T.Sayama on June 24, 2015
         #if( bound_riv_wlev_idx(1, kk) <= -100.0 ) continue # not boundary
         #dh = ((zb_p + hr_p) - (zb_n + hr_n)) / distance # diffussion
-            if( bound_riv_wlev_idx(1, kk) > -100.0 ):
+            if( bound_riv_wlev_idx[1, kk] > -100.0 ):
                 dh = ((zb_p + hr_p) - (zb_n + hr_n)) / distance # diffussion 
         #endif
         # kinematic wave (for dam and water gate) modified by T.Sayama on Aug 9, 2021
@@ -205,8 +208,9 @@ def qr_calc(hr_idx, domain_riv_idx, zb_riv_idx, dif_riv_idx, dis_riv_idx, down_r
             hw = hr_p
             if( zb_p < zb_n ):
                 hw = max(0.0, zb_p + hr_p - zb_n)
-            #call hq_riv(hw, dh, width_idx[k], qr_temp)
-            call hq_riv(hw, dh, k, width_idx[k], qr_temp)
+            ##call hq_riv(hw, dh, width_idx[k], qr_temp)
+            #call hq_riv(hw, dh, k, width_idx[k], qr_temp)
+            qr_temp = hq_riv(dh, ns_river, w, hw, k, sec_map_idx, sec_div, sec_hr, sec_peri, sec_ns_river, sec_b, sec_area)
             qr_idx[k] = qr_temp
         else:
             # reverse flow
@@ -214,8 +218,9 @@ def qr_calc(hr_idx, domain_riv_idx, zb_riv_idx, dif_riv_idx, dis_riv_idx, down_r
             if( zb_n < zb_p ):
                 hw = max(0.0, zb_n + hr_n - zb_p)
             dh = abs(dh)
-            #call hq_riv(hw, dh, width_idx[k], qr_temp)
-            call hq_riv(hw, dh, kk, width_idx[k], qr_temp)
+            ##call hq_riv(hw, dh, width_idx[k], qr_temp)
+            #call hq_riv(hw, dh, kk, width_idx[k], qr_temp)
+            qr_temp = hq_riv(dh, ns_river, w, hw, kk, sec_map_idx, sec_div, sec_hr, sec_peri, sec_ns_river, sec_b, sec_area)
             qr_idx[k] = -qr_temp
         #endif
     #enddo

@@ -45,8 +45,7 @@ def read_bound(bound_slo_wlev_switch, bound_slo_wlev ):
 
     #endif
 
-    allocate( t_bound_slo_wlev(0:tt_max_bound_slo_wlev), bound_slo_wlev(ny, nx), &
-    bound_slo_wlev_idx(0:tt_max_bound_slo_wlev, slo_count), rdummy_dim(slo_count) )
+    allocate( t_bound_slo_wlev(0:tt_max_bound_slo_wlev), bound_slo_wlev(ny, nx), bound_slo_wlev_idx(0:tt_max_bound_slo_wlev, slo_count), rdummy_dim(slo_count) )
     rewind(17)
 
  bound_slo_wlev = -999.90

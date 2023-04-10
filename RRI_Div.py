@@ -1,12 +1,14 @@
-def RRI_Div(qr_idx, hr_idx, qr_div_idx):
+def RRI_Div(qr_idx, hr_idx, qr_div_idx, ns_river, w, hw, k, sec_map_idx, sec_div, sec_hr, sec_peri, sec_ns_river, sec_b, sec_area):
     """
     RRI Div fonction (?)
 
     :param dr_idx:
     :param hr_idx:
     :param qr_div_idx:
+    :param ns_river:
 
-    :return: 
+
+    :return: qr_div_idx Updated
     """
     #real(8) qr_idx(riv_count), hr_idx(riv_count), qr_div_idx(riv_count)
 
@@ -49,7 +51,9 @@ def RRI_Div(qr_idx, hr_idx, qr_div_idx):
                 hw = hr_p
                 if( zb_p .lt. zb_n ):
                     hw = max(0.0, zb_p + hr_p - zb_n)
-                call hq_riv(hw, dh, k, width_idx[k], qr_temp)
+                #call hq_riv(hw, dh, k, width_idx[k], qr_temp)
+                # Proto input is h, dh, k, q
+                qr_temp = hq_riv(dh, ns_river, w, hw, k, sec_map_idx, sec_div, sec_hr, sec_peri, sec_ns_river, sec_b, sec_area)
                 qr_div_idx[k] = qr_temp
             else:
                 # reverse flow
@@ -57,12 +61,14 @@ def RRI_Div(qr_idx, hr_idx, qr_div_idx):
                 if( zb_n < zb_p ):
                     hw = max(0.0, zb_n + hr_n - zb_p)
                 dh = abs(dh)
-                call hq_riv(hw, dh, kk_div, width_idx[k], qr_temp)
+                #call hq_riv(hw, dh, kk_div, width_idx[k], qr_temp)
+                qr_temp = hq_riv(dh, ns_river, w, h, k, sec_map_idx, sec_div, sec_hr, sec_peri, sec_ns_river, sec_b, sec_area)
                 qr_div_idx[k] = -qr_temp
             #endif
             #qr_idx[k] = qr_idx[k] - qr_div_idx[k] # comment out by T.Sayama on Dec 7, 2022 v.1.4.2.7
             #qr_idx[kk_div] = qr_idx[kk_div] + qr_div_idx[k]
         #endif
+        return(qr_div_idx)
     #enddo
 
     #end subroutine RRI_Div

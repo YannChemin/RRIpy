@@ -1,6 +1,6 @@
 # RRI_Section
 
-def set_section(sec_id_max, sec_map, sec_div, secfile, depth, width, height, riv):
+def set_section(sec_id_max, sec_map, secfile, depth, width, height, riv):
     """
     Set section
 
@@ -14,7 +14,6 @@ def set_section(sec_id_max, sec_map, sec_div, secfile, depth, width, height, riv
     :param riv:
 
     :return: width
-    :return: sec_width
     :return: depth
     :return: sec_depth
     :return: height
@@ -84,7 +83,7 @@ def set_section(sec_id_max, sec_map, sec_div, secfile, depth, width, height, riv
             #endif
         #enddo
     #enddo
-    return(width, sec_width, depth, sec_depth, height, sec_height, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv)
+    return(width, depth, sec_depth, height, sec_height, sec_div, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv)
 #end
 
 
@@ -134,7 +133,7 @@ def sec_hq_riv(h, dh, k, q):
     #end
 
 
-def hr2vr(sec_map_idx, k, hr, area, area_ratio_idx, sec_div, sec_hr_sec_b, sec_area, len_riv_idx):
+def hr2vr(sec_map_idx, k, hr, area, area_ratio_idx, sec_div, sec_hr, sec_b, sec_area, len_riv_idx):
     """
     Convert hr to vr
     

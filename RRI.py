@@ -171,6 +171,14 @@ def rri():
         #endif
     #enddo
 
+    # Parameters from global vars file
+    ddt_min_riv     = 0.10
+    errmax          = 10.0
+    safety          = 0.90
+    pgrow           = -.20
+    pshrnk          = -.250
+    errcon          = 1.89e-4
+
     ##########################################################
     ### STEP 1: FILE READING 
     ##########################################################
@@ -372,13 +380,23 @@ def rri():
             #line_list = line.split(" ")
             line_list = [s for s in line.split(' ') if s]
             for m in range(nx):
-                sec_map[l-6][m] = line_list[m]
+                sec_map[l-6][m] = float(line_list[m])
 
         f10.close()
         #call read_gis_int(sec_map_file, sec_map)
         sec_id_max = np.max( sec_map )
         # call set_section
-        width, sec_width, depth, sec_depth, height, sec_height, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv = set_section(sec_id_max, sec_map, sec_div, secfile, depth, width, height, riv)
+        width, depth, sec_depth, height, sec_height, sec_div, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv = set_section(sec_id_max, sec_map, secfile, depth, width, height, riv)
+    else:
+        # No section data: arrays are empty
+        sec_div = np.zeros(0)
+        sec_depth = np.zeros(0)
+        sec_height = np.zeros(0)
+        sec_hr = np.zeros(0)
+        sec_area = np.zeros(0)
+        sec_peri = np.zeros(0)
+        sec_b = np.zeros(0)
+        sec_ns_river = np.zeros(0)
     #endif
     len_riv = np.where(riv == 1, length, len_riv) # added on Dec. 27, 2021
 
@@ -774,7 +792,8 @@ def rri():
             hr_idx = sub_riv_ij2idx( hr_idx, riv_count, hr, riv_idx2i, riv_idx2j )
             # from hr_idx -> vr_idx
             for k in range( riv_count ):
-                vr_idx[k] = hr2vr(hr_idx[k], k)
+                #vr_idx[k] = hr2vr(hr_idx[k], k)
+                vr_idx[k] = hr2vr(sec_map_idx, k, hr_idx[k], area, area_ratio_idx, sec_div, sec_hr, sec_b, sec_area, len_riv_idx)
             #enddo
 
             #do #-----------------*******************
@@ -798,10 +817,10 @@ def rri():
                 #endif
 
                 #1 continue
-                while( errmax > 1.0 and ddt > ddt_min_riv): # modified on Jan 7, 2021
+                while( errmax > 1.0 and ddt > ddt_min_riv ): # modified on Jan 7, 2021
                     # try smaller ddt
-                    ddt = np.max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
-                    ddt = np.max( ddt, ddt_min_riv ) # added on Jan 7, 2021
+                    ddt = max( safety * ddt * (errmax ** pshrnk), 0.50 * ddt )
+                    ddt = max( ddt, ddt_min_riv ) # added on Jan 7, 2021
                     ddt_chk_riv = ddt
                     print( "shrink (riv): %f, %f, %f" % (ddt, errmax, maxloc( vr_err )))
                     if(ddt == 0):

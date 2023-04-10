@@ -59,7 +59,7 @@ def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wl
                 call dam_operation( dam_loc[i] )
                 qr_idx[ int(dam_loc[i]) ] = dam_qout[i]
                 qr_sum_idx[ int(dam_loc[i]) ] = qr_sum_idx[ int(dam_loc[i]) ] + dam_qin[ int(dam_loc[i]) ] - dam_qout[i]
-            else if( dam_volmax[i] == 0.0 ):
+            elif( dam_volmax[i] == 0.0 ):
                 # barrage
                 if( hr_idx[ int(dam_loc[i]) ] <= dam_floodq[i] ):
                     qr_idx[ int(dam_loc[i]) ] = 0.0
@@ -100,7 +100,7 @@ def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wl
         # outflow from [k]
         qr_sum_idx[k] = qr_sum_idx[k] + qr_idx[k]
         kk = down_riv_idx[k]
-        if(domain_riv_idx[kk]==0):
+        if( domain_riv_idx[kk] == 0 ):
             continue
         # qr_sum minus (flowing into) discharge at the destination cell
         qr_sum_idx[kk] = qr_sum_idx[kk] - qr_idx[k]
@@ -118,7 +118,7 @@ def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wl
                 qr_sum_idx[kk] = qr_sum_idx[kk] + qr_div_idx[k]
             #endif
             kk = div_dest_idx(l)
-            if(domain_riv_idx[kk]==0):
+            if( domain_riv_idx[kk] == 0 ):
                 continue
             # qr_sum minus (flowing into) discharge at the destination cell
             qr_sum_idx[kk] = qr_sum_idx[kk] - qr_div_idx[k] 
@@ -134,11 +134,18 @@ def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wl
 
 
 
-def qr_calc(hr_idx, qr_idx):
+def qr_calc(hr_idx, domain_riv_idx, zb_riv_idx, dif_riv_idx, dis_riv_idx, down_riv_idx, dam_flg, dam_floodq ):
     """
     Lateral discharge (river)
 
     :param hr_idx:
+    :param domain_riv_idx:
+    :param zb_riv_idx:
+    :param dif_riv_idx:
+    :param dis_riv_idx:
+    :param down_riv_idx:
+    :param dam_flg:
+    :param dam_floodq:
 
     :return: qr_idx
     """
@@ -148,12 +155,12 @@ def qr_calc(hr_idx, qr_idx):
     #real(8) dh, distance
     #real(8) qr_temp, hw
 
-    qr_idx(:) = 0.0
-    qr_div_idx(:) = 0.0
+    qr_idx = np.zeros(riv_count)
+    qr_div_idx = np.zeros(riv_count)
 
     #$omp parallel do private(kk,zb_p,hr_p,distance,zb_n,hr_n,dh,hw,qr_temp,dif_p,dif_n)
     for k in range( riv_count):
-        if(domain_riv_idx[k] == 2):
+        if( domain_riv_idx[k] == 2 ):
             continue
         zb_p = zb_riv_idx[k]
         hr_p = hr_idx[k]

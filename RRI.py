@@ -242,7 +242,7 @@ def rri():
                 direc[l-6][m] = line_list[m]
 
         f10.close()
-     #call read_gis_int(landfile, land)
+        #call read_gis_int(landfile, land)
     #endif
 
     # land : 1 ... num_of_landuse
@@ -411,7 +411,7 @@ def rri():
     zb_riv = zs
     for i in range(ny):
         for j in range(nx):
-            zb[i, j] = zs[i, j] - soildepth[int(land[i,j])]
+            zb[i, j] = zs[i, j] - soildepth[int(land[i,j])-1]
             if(riv[i, j] == 1):
                 zb_riv[i, j] = zs[i, j] - depth[i, j]
         #enddo
@@ -422,8 +422,8 @@ def rri():
     # domain = 1 : inside the domain
     # domain = 2 : outlet point (where dir[i,j] = 0 or dir[i,j] = -1),
     #              and cells located at edges
-    domain = 0
-    num_of_cell = 0
+    domain.fill( 0 )
+    num_of_cell = 0 
     for i in range(ny):
         for j in range(nx):
             if( zs[i, j] > -100.0 ):
@@ -440,7 +440,7 @@ def rri():
     print( "total area [km2] : ", num_of_cell * area / (10.0 ** 6.00))
 
     # river index setting
-    riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx = riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_len_switch)
+    riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx = riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_length_switch)
 
     # TODO slope index setting
     slo_idx2i, slo_idx2j, slo_ij2idx, down_slo_idx, domain_slo_idx, zb_slo_idx, dis_slo_idx, len_slo_idx, acc_slo_idx, down_slo_1d_idx, dis_slo_1d_idx, len_slo_1d_idx, land_idx, dif_slo_idx, ns_slo_idx, soildepth_idx, gammaa_idx, ksv_idx, faif_idx, infilt_limit_idx, ka_idx, gammam_idx, beta_idx, da_idx, dm_idx, ksg_idx, gammag_idx, kg0_idx, fpg_idx, rgl_idx = slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gammaa, ksv, faif, infilt_limit, ka, gammaa, beta, da, dm, ksg, gammag, kg0, fpg, rgl, eight_dir, dy, dx, direc )

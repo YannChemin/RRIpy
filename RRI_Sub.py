@@ -2,12 +2,14 @@
 import numpy as np
 
 # river index setting
-def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_len_switch):
+def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_len_switch):
     """
     River index setting
 
     :param ny:
     :param nx:
+    :param dx:
+    :param dy:
     :param domain:
     :param riv:
     :param width:
@@ -38,9 +40,9 @@ def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_ri
     :return: len_riv_idx
     """
     riv_count = 0
-    for i in range(ny):
-        for j in range (nx):
-            if( domain[i,j] != 0 and riv[i,j] == 1):
+    for i in range( ny ):
+        for j in range( nx ):
+            if( domain[i,j] != 0 and riv[i,j] == 1 ):
                 riv_count = riv_count + 1
         #enddo
     #enddo
@@ -65,12 +67,11 @@ def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_ri
     len_riv_idx = np.zeros(riv_count) # add v1.4
 
     riv_count = 0
-    for i in range(ny):
-        for j in range(nx):
+    for i in range( ny ):
+        for j in range( nx ):
             if(domain[i,j] == 0 or riv[i,j] != 1):
                 continue
-            # domain[i, j] = 1 or 2 and riv(i, j) = 1
-            riv_count = riv_count + 1
+            # domain[i, j] = 1 or 2 and riv[i, j] = 1
             riv_idx2i[riv_count] = i
             riv_idx2j[riv_count] = j
             domain_riv_idx[riv_count] = domain[i, j]
@@ -80,20 +81,20 @@ def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_ri
             area_ratio_idx[riv_count] = area_ratio[i, j]
             zb_riv_idx[riv_count] = zb_riv[i, j]
             riv_ij2idx[i, j] = riv_count
-            dif_riv_idx[riv_count] = dif[land[i, j]]
+            dif_riv_idx[riv_count] = dif[int(land[i, j])-1]
             sec_map_idx[riv_count] = sec_map[i, j]
             len_riv_idx[riv_count] = len_riv[i, j] # add v1.4
+            riv_count = riv_count + 1
         #enddo
     #enddo
 
     # search for downstream gridcell (down_idx)
     riv_count = 0
-    for i in range(ny):
-        for j in range(nx):
+    for i in range( ny ):
+        for j in range( nx ):
             if(domain[i,j] == 0 or riv[i,j] == 1):
                 continue
             # domain(i, j) = 1 or 2 and riv(i, j) = 1
-            riv_count = riv_count + 1
             # right
             if( direc[i,j] == 1 ):
                 ii = i
@@ -130,7 +131,7 @@ def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_ri
                 jj = j
                 distance = dy
             # right up
-            elif( direc[i,j] ==.128 ):
+            elif( direc[i,j] == 128 ):
                 ii = i - 1
                 jj = j + 1
                 distance = np.sqrt( dx*dx + dy*dy )
@@ -141,7 +142,7 @@ def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_ri
                 raise Exception ( "dir[%d, %d] error %f" % ( i, j, direc[i, j]) )
             #endif
 
-            # If the downstream cell is outside the domain, set domain(i, j) = 2
+            # If the downstream cell is outside the domain, set domain[i, j] = 2
             if( ii < 0 or ii > ny-1 or jj < 0 or jj > nx-1 ):
                 domain[i, j] = 2
                 direc[i, j] = 0
@@ -156,12 +157,12 @@ def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_ri
             #endif
 
             if( riv[ii,jj] == 0 ):
-                raise Exception ("riv(%d, %d) should be 1 %d %d" % (i, j, ii, jj) )
+                raise Exception ("riv[%d,%d] should be 1 [%d %d]" % (i, j, ii, jj) )
             #endif
-
             dis_riv_idx[riv_count] = distance
             down_riv_idx[riv_count] = riv_ij2idx[ii, jj]
 
+            riv_count = riv_count + 1
         #enddo
     #enddo
 

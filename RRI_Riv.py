@@ -1,22 +1,30 @@
 # RRI_Riv.f90
 
-def funcr( riv_count, vr_idx ):
+def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wlev, t_bound_riv_wlev, time, ddt, qr_div_idx ):
     """
     Variable definition (river)
 
     :param riv_count:
     :param vr_idx:
-    
+    :param hr_idx:
+    :param bound_riv_wlev_switch: 
+    :param tt_max_bound_riv_wlev:
+    :param t_bound_riv_wlev:
+    :param time:
+    :param ddt:
+    :param qr_div_idx:
+
+
     :return: fr_idx
     :return: qr_idx
     """
     #real(8) hr_idx(riv_count), vr_idx(riv_count), fr_idx(riv_count), qr_idx(riv_count)
     #real(8) qr_sum_idx(riv_count), qr_div_idx(riv_count)
 
-    fr_idx(:) = 0.0
-    qr_idx(:) = 0.0
-    qr_sum_idx(:) = 0.0
-    qr_div_idx(:) = 0.0
+    fr_idx = np.zeros(riv_count)
+    qr_idx = np.zeros(riv_count)
+    qr_sum_idx = np.zeros(riv_count)
+    qr_div_idx = np.zeros(riv_count)
 
     # add v1.4
     for k in range( riv_count ):
@@ -46,23 +54,23 @@ def funcr( riv_count, vr_idx ):
     if( dam_switch == 1 ):
         call dam_prepare(qr_idx) # calculate inflow to dam
         for i in range( dam_num ):
-            if( dam_volmax(i) > 0.0 ):
+            if( dam_volmax[i] > 0.0 ):
                 # dam
-                call dam_operation( dam_loc(i) )
-                qr_idx( dam_loc(i) ) = dam_qout(i)
-                qr_sum_idx( dam_loc(i) ) = qr_sum_idx( dam_loc(i) ) + dam_qin( dam_loc(i) ) - dam_qout(i)
-            else if( dam_volmax(i) == 0.0 ):
+                call dam_operation( dam_loc[i] )
+                qr_idx[ int(dam_loc[i]) ] = dam_qout[i]
+                qr_sum_idx[ int(dam_loc[i]) ] = qr_sum_idx[ int(dam_loc[i]) ] + dam_qin[ int(dam_loc[i]) ] - dam_qout[i]
+            else if( dam_volmax[i] == 0.0 ):
                 # barrage
-                if( hr_idx( dam_loc(i) ) <= dam_floodq(i) ):
-                    qr_idx( dam_loc(i) ) = 0.0
+                if( hr_idx[ int(dam_loc[i]) ] <= dam_floodq[i] ):
+                    qr_idx[ int(dam_loc[i]) ] = 0.0
                 #endif
             else:
-                # water gate (dam_volmax(i) < 0) # added on Aug 7, 2021 by T.Sayama
-                k = dam_loc(i)
+                # water gate (dam_volmax[i] < 0) # added on Aug 7, 2021 by T.Sayama
+                k = dam_loc[i]
                 kk = down_riv_idx[k]
-                call gate_operation( dam_loc(i), hr_idx[k], hr_idx[kk] )
-                qr_idx( dam_loc(i) ) = dam_qout(i)
-                #qr_sum_idx( dam_loc(i) ) = qr_sum_idx( dam_loc(i) ) + dam_qin( dam_loc(i) ) - dam_qout(i)
+                call gate_operation( dam_loc[i], hr_idx[k], hr_idx[kk] )
+                qr_idx( int(dam_loc[i]) ) = dam_qout[i]
+                #qr_sum_idx( dam_loc[i] ) = qr_sum_idx( dam_loc[i] ) + dam_qin( dam_loc[i] ) - dam_qout[i]
             #endif
         #enddo
     #endif
@@ -74,10 +82,10 @@ def funcr( riv_count, vr_idx ):
                 itemp = jtemp
         #enddo
         for k in range( riv_count ):
-            if( bound_riv_disc_idx(itemp, k) <= -100.0 ):
+            if( bound_riv_disc_idx[itemp, k] <= -100.0 ):
                 continue # not boundary
-            #qr_idx[k] = bound_riv_disc_idx(itemp, k) / area  # qr_idx: discharge per unit area
-            qr_idx[k] = bound_riv_disc_idx(itemp, k) # modified v1.4
+            #qr_idx[k] = bound_riv_disc_idx[itemp, k] / area  # qr_idx: discharge per unit area
+            qr_idx[k] = bound_riv_disc_idx[itemp, k] # modified v1.4
             # linear interpolation of the boundary condition
             #qr_idx[k] = bound_riv_disc_idx(itemp-1, k) * (t_bound_riv_disc(itemp) - (time + ddt)) &
             #           + bound_riv_disc_idx(itemp, k) * ((time + ddt) - t_bound_riv_disc(itemp-1))

@@ -1,5 +1,4 @@
-from globals_vars import *
-
+import numpy as np
 # RRI_GW
 
 def funcg(slo_count, hg_idx, fg_idx, qg_idx):
@@ -119,7 +118,7 @@ def qg_calc(slo_count, hg_idx, qg_idx):
 #end def qg_calc
 
 
-def hg_calc(gammag_p, kg0_p, ksg_p, fpg_p, hg_p, dh, length, area)
+def hg_calc(gammag_p, kg0_p, ksg_p, fpg_p, hg_p, dh, length, area):
     """
     :Description: water depth and gw discharge relationship
     
@@ -196,7 +195,7 @@ def gw_lose(hg_idx):
 #end def gw_lose
 
 
-def gw_exfilt(hs_idx, gampt_ff_idx, hg_idx)
+def gw_exfilt(hs_idx, gampt_ff_idx, hg_idx):
     """
     # gw exfilt
     """
@@ -213,7 +212,7 @@ def gw_exfilt(hs_idx, gampt_ff_idx, hg_idx)
         if( infilt_limit_idx[k] > gampt_ff_idx[k] and infilt_limit_idx[k] - gampt_ff_idx[k] >= exfilt and ksv_idx[k] > 0.0 and infilt_limit_idx[k] > 0.0 ):
             exfilt_ga = exfilt
             exfilt_hs = 0.0
-        else
+        else:
             if( ksv_idx[k] > 0.0 and infilt_limit_idx[k] > 0.0 ):
                 exfilt_ga = infilt_limit_idx[k] - gampt_ff_idx[k]
             #endif

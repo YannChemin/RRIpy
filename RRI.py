@@ -2,6 +2,7 @@ import numpy as np
 from RRI_Sub import *
 from RRI_Dam import *
 from RRI_GW import *
+from RRI_Section import *
 
 def rri():
     """
@@ -730,9 +731,10 @@ def rri():
     #endif
 
     # For TSAS Output (Initial Condition)
-    hs_idx = sub_slo_ij2idx( hs )
-    #TODO hs_idx = sub_slo_ij2idx( k, slo_count, a_idx, a, slo_idx2i, slo_idx2j )
-    hr_idx = sub_riv_ij2idx( hr )
+    #hs_idx = sub_slo_ij2idx( hs )
+    hs_idx = sub_slo_ij2idx( hs_idx, slo_count, hs, slo_idx2i, slo_idx2j )
+    #hr_idx = sub_riv_ij2idx( hr )
+    hr_idx = sub_riv_ij2idx( hr_idx, riv_count, hr, riv_idx2i, riv_idx2j )
     #call RRI_TSAS(0, hs_idx, hr_idx, hg_idx, qs_ave_idx, qr_ave_idx, qg_ave_idx, qp_t_idx)
 
     ##########################################################
@@ -749,9 +751,9 @@ def rri():
     out_next = round(out_dt)
     tt = 0
 
-    for t in range( maxt ):
+    for t in range( int(maxt) ):
         if(t % 1 == 0):
-            print( t, "/", maxt )
+            print( t, "/", int(maxt) )
         #******* RIVER CALCULATION ******************************
         if( riv_thresh >= 0 ):
             # if (riv_thresh < 0) go to 2 # TODO Deal with GOTO 2
@@ -768,7 +770,8 @@ def rri():
             # hr -> hr_idx
             # Memo: riv_ij2idx must be here. 
             # hr_idx cannot be replaced within the following for loop.
-            hr_idx = sub_riv_ij2idx( hr )
+            #hr_idx = sub_riv_ij2idx( hr )
+            hr_idx = sub_riv_ij2idx( hr_idx, riv_count, hr, riv_idx2i, riv_idx2j )
             # from hr_idx -> vr_idx
             for k in range( riv_count ):
                 vr_idx[k] = hr2vr(hr_idx[k], k)

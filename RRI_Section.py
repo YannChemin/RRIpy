@@ -84,7 +84,7 @@ def set_section(sec_id_max, sec_map, sec_div, secfile, depth, width, height, riv
             #endif
         #enddo
     #enddo
-return(width, sec_width, depth, sec_depth, height, sec_height, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv)
+    return(width, sec_width, depth, sec_depth, height, sec_height, sec_hr, sec_area, sec_peri, sec_b, sec_ns_river, riv)
 #end
 
 
@@ -113,7 +113,7 @@ def sec_hq_riv(h, dh, k, q):
         n = sec_ns_river[ids, 1]
         a = h * sec_b[ids, 1]
 
-    else if( h > sec_hr[ids, div_max] ):
+    elif( h > sec_hr[ids, div_max] ):
         p = sec_peri[ids, div_max]
         n = sec_ns_river[ids, div_max]
         a = sec_area[ids, div_max] + (h - sec_hr[ids, div_max]) * sec_b[ids, div_max]
@@ -159,7 +159,7 @@ def hr2vr(sec_map_idx, k, hr, area, area_ratio_idx, sec_div, sec_hr_sec_b, sec_a
         div_max = sec_div[ids]
         if( hr <= sec_hr[ids, 1] ):
             a = hr * sec_b[ids, 1]
-        else if( hr > sec_hr[ids, div_max] ):
+        elif( hr > sec_hr[ids, div_max] ):
             a = sec_area[ids, div_max] + (hr - sec_hr[ids, div_max]) * sec_b[ids, div_max]
         else:
             for i in range( 1, div_max ):
@@ -171,7 +171,7 @@ def hr2vr(sec_map_idx, k, hr, area, area_ratio_idx, sec_div, sec_hr_sec_b, sec_a
         #endif
         vr = a * len_riv_idx[k]
     #endif
-return(vr)
+    return(vr)
 #end
 
 
@@ -201,7 +201,7 @@ def vr2hr( sec_map_idx, k, vr, area, area_ratio_idx, sec_div, len_riv_idx, sec_a
         a = vr / len_riv_idx[k]
         if( a <= sec_area[ids, 1] ):
             hr = a / sec_b[ids, 1]
-        else if( a > sec_area[ids, div_max] ):
+        elif( a > sec_area[ids, div_max] ):
             hr = (a - sec_area[ids, div_max]) / sec_b[ids, div_max] + sec_hr[ids, div_max]
         else:
             for i in range(1, div_max):

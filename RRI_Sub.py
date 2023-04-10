@@ -180,10 +180,11 @@ def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_rati
 #end def riv_idx_setting
 
 
-def sub_riv_ij2idx( riv_count, a, riv_idx2i, riv_idx2j, a_idx ):
+def sub_riv_ij2idx( a_idx, riv_count, a, riv_idx2i, riv_idx2j ):
     """
     # 2D -> 1D (ij2idx)
     
+    :param a_idx:
     :param riv_count:
     :param a:
     :param riv_idx2i:
@@ -193,7 +194,7 @@ def sub_riv_ij2idx( riv_count, a, riv_idx2i, riv_idx2j, a_idx ):
     """
     #real(8) a(ny, nx), a_idx(riv_count)
     for k in range( riv_count ):
-        a_idx[k] = a[riv_idx2i[k], riv_idx2j[k]]
+        a_idx[k] = a[int(riv_idx2i[k]), int(riv_idx2j[k])]
     #enddo
 
     return(a_idx)
@@ -535,13 +536,12 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
 #end def slo_idx_setting
 
 
-def sub_slo_ij2idx( k, slo_count, a_idx, a, slo_idx2i, slo_idx2j ):
+def sub_slo_ij2idx( a_idx, slo_count, a, slo_idx2i, slo_idx2j ):
     """
     2D -> 1D (ij2idx)
     
-    :param k:
-    :param slo_count:
     :param a_idx:
+    :param slo_count:
     :param a:
     :param slo_idx2i:
     :param slo_idx2j:
@@ -550,7 +550,7 @@ def sub_slo_ij2idx( k, slo_count, a_idx, a, slo_idx2i, slo_idx2j ):
     """
     #real(8) a(ny, nx), a_idx(slo_count)
     for k in range ( slo_count ):
-        a_idx[k] = a[slo_idx2i[k], slo_idx2j[k]]
+        a_idx[k] = a[int(slo_idx2i[k]), int(slo_idx2j[k])]
     #enddo
 
     return(a_idx)
@@ -573,7 +573,7 @@ def sub_slo_idx2ij( a, slo_count, slo_idx2i, slo_idx2j, a_idx ):
     #real(8) a_idx(slo_count), a(ny, nx)
     a.fill(0.0)
     for k in range( slo_count ):
-        a[slo_idx2i[k], slo_idx2j[k]] = a_idx[k]
+        a[int(slo_idx2i[k]), int(slo_idx2j[k])] = a_idx[k]
     #enddo
 
     return(a)
@@ -606,10 +606,12 @@ def sub_slo_idx2ij4( a, slo_count, slo_idx2i, slo_idx2j, a_idx ):
 #end def sub_slo_idx2ij4
 
 
-def storage_calc(hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx):
+def storage_calc(ny, nx, hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx):
     """
     # storage calculation
 
+    :param ny:
+    :param nx:
     :param hs:
     :param hr:
     :param hg:
@@ -642,7 +644,7 @@ def storage_calc(hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx
                 sr = sr + vr_temp
             #endif
             si = si + gampt_ff[i,j] * area
-            sg = sg - hg[i,j] * gammag_idx[slo_ij2idx[i,j]] * area # storage deficit
+            sg = sg - hg[i,j] * gammag_idx[int(slo_ij2idx[i,j])] * area # storage deficit
         #enddo
     #enddo
     return(ss, sr, si, sg)

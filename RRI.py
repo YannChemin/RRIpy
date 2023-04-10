@@ -86,20 +86,21 @@ def rri():
     # dem file metadata (6 lines, kvp, space separated)
     f10 = open(datadir+demfile,"r")
     lines_list = f10.readlines()
-    nx = lines_list[0].split(" ")[1]
-    ny = lines_list[1].split(" ")[1]
-    xllcorner = lines_list[2].split(" ")[1]
-    yllcorner = lines_list[3].split(" ")[1]
-    cellsize = lines_list[4].split(" ")[1]
-    nodata = lines_list[5].split(" ")[1]
+    nx = int(lines_list[0].split(" ")[1])
+    ny = int(lines_list[1].split(" ")[1])
+    xllcorner = float(lines_list[2].split(" ")[1])
+    yllcorner = float(lines_list[3].split(" ")[1])
+    cellsize = float(lines_list[4].split(" ")[1])
+    nodata = int([s for s in lines_list[5].split(' ') if s][1])
     print(nx, ny, xllcorner, yllcorner, cellsize, nodata)
     # Load DEM data
     zs = np.zeros((ny, nx))
     for l in range(6,len(lines_list)):
         line = lines_list[l]
-        line_list = line.split(" ")
-        for m in range(len(line_list)):
-            zs[l][m] = line_list[m]
+        #line_list = line.split(" ")
+        line_list = [s for s in line.split(' ') if s]
+        for m in range(nx):
+            zs[l-6][m] = float(line_list[m])
 
     f10.close()
 
@@ -115,9 +116,10 @@ def rri():
     lines_list = f10.readlines()
     for l in range(6,len(lines_list)):
         line = lines_list[l]
-        line_list = line.split(" ")
-        for m in range(len(line_list)):
-            acc[l][m] = line_list[m]
+        #line_list = line.split(" ")
+        line_list = [s for s in line.split(' ') if s]
+        for m in range(nx):
+            acc[l-6][m] = line_list[m]
 
     f10.close()
 
@@ -127,9 +129,10 @@ def rri():
     lines_list = f10.readlines()
     for l in range(6,len(lines_list)):
         line = lines_list[l]
-        line_list = line.split(" ")
-        for m in range(len(line_list)):
-            direc[l][m] = line_list[m]
+        #line_list = line.split(" ")
+        line_list = [s for s in line.split(' ') if s]
+        for m in range(nx):
+            direc[l-6][m] = line_list[m]
 
     f10.close()
     #call read_gis_int(dirfile, dir)
@@ -141,9 +144,10 @@ def rri():
         lines_list = f10.readlines()
         for l in range(6,len(lines_list)):
             line = lines_list[l]
-            line_list = line.split(" ")
-            for m in range(len(line_list)):
-                direc[l][m] = line_list[m]
+            #line_list = line.split(" ")
+            line_list = [s for s in line.split(' ') if s]
+            for m in range(nx):
+                direc[l-6][m] = line_list[m]
 
         f10.close()
      #call read_gis_int(landfile, land)
@@ -1235,42 +1239,51 @@ def rri():
             if( dam_switch == 1 ):
                 if( tt == 1 ):
                     f1001.open("./out/dam_out.txt")
-                call dam_write
+                    #call dam_write
+                    err = dam_write(f1001, dam_num, dam_vol, dam_qin, dam_loc, dam_qout)
+                    f1001.close()
                 if(t == maxt ):
                     f1002.open("./out/damcnt_out.txt")
-                    call dam_write_cnt
+                    #call dam_write_cnt
+                    err = dam_write_cnt(f1002, dam_num, dam_name, dam_iy, dam_ix, dam_volmax, dam_floodq, dam_maxfloodq, dam_rate, dam_vol)
+                    f1002.close()
                 #endif
             #endif
 
             #******* OUTPUT FOR UNSTEADY MODEL (DIR = -1) *********** added on Sep 15, 2019
             itemp = 0
-            for k = 1, riv_count
+            for k in range( riv_count ):
                 i = riv_idx2i[k]
                 j = riv_idx2j[k]
-                if(dir[i,j] == -1) itemp = 1
+                if(dir[i,j] == -1):
+                    itemp = 1
             #enddo
 
             if( itemp == 1):
                 ofile_ro = './out/ro_' + trim(t_char) + ".out"
-                open(111, file = ofile_ro)
-                for k = 1, riv_count
+                f111 = open( ofile_ro )
+                for k in range( riv_count ):
                     i = riv_idx2i[k]
                     j = riv_idx2j[k]
                     kk = down_riv_idx[k]
-                    if(k == kk) continue
+                    if(k == kk):
+                        continue
                     ii = riv_idx2i[kk]
                     jj = riv_idx2j[kk]
                     if(dir[ii,jj] == -1):
                         f111.write(1, i, j, ii, jj, qr_ave_idx[k])
                     #endif
+                f111.close()
                 #enddo
-            for k = 1, slo_count
+            for k in range( slo_count ):
                 i = slo_idx2i[k]
                 j = slo_idx2j[k]
-                if(dir[i,j] == -1) continue
-                for l = 1, lmax
-                    kk = down_slo_idx(l, k)
-                    if(kk <= 0) continue
+                if(dir[i,j] == -1):
+                    continue
+                for l in range( lmax ):
+                    kk = down_slo_idx[l, k]
+                    if(kk <= 0):
+                        continue
                     ii = slo_idx2i[kk]
                     jj = slo_idx2j[kk]
                     if(dir[ii,jj] == -1):
@@ -1279,11 +1292,11 @@ def rri():
                 #enddo
             #enddo
 
-            for k = 1, slo_count
+            for k in range( slo_count ):
                 i = slo_idx2i[k]
                 j = slo_idx2j[k]
                 if(dir[i,j] == -1):
-                    for l in range(1, lmax):
+                    for l in range( lmax ):
                         kk = down_slo_idx[l, k]
                         if(kk <= 0):
                             continue
@@ -1291,7 +1304,7 @@ def rri():
                         jj = slo_idx2j[kk]
                         if(domain[ii,jj] != 1):
                             continue
-                        f111.write( 3, ii, jj, i, j, -1.0 * qs_ave[l,ii,jj] * area
+                        f111.write( 3, ii, jj, i, j, -1.0 * qs_ave[l,ii,jj] * area)
                     #enddo
                 #endif
             #enddo
@@ -1308,8 +1321,9 @@ def rri():
         #endif
     #endif
     # check water balance
-    if(mod(t, 1) == 0):
-        call storage_calc(hs, hr, hg, ss, sr, si, sg)
+    if(t % 1 == 0):
+        #call storage_calc(hs, hr, hg, ss, sr, si, sg)
+        ss, sr, si, sg = storage_calc(hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx)
         print( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit))
         f1000.write( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg)
     #endif

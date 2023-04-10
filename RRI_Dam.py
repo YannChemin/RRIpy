@@ -202,7 +202,7 @@ def dam_checkstate(dam_num, dam_vol_temp, dam_vol, dam_state, dam_vol_max):
 
 #######################################################################
 
-def dam_write(f1001, dam_num, dam_vol, dam_qin, dam_loc, dam_qout)
+def dam_write(f1001, dam_num, dam_vol, dam_qin, dam_loc, dam_qout):
     """
     Write Dam info
 

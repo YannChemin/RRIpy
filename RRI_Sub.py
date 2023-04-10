@@ -2,7 +2,7 @@
 import numpy as np
 
 # river index setting
-def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_len_switch):
+def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_length_switch):
     """
     River index setting
 
@@ -22,7 +22,7 @@ def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_rati
     :param sec_map:
     :param len_riv:
     :param direc:
-    :param sec_len_switch:
+    :param sec_length_switch:
 
     :return: riv_idx2i
     :return: riv_idx2j
@@ -38,6 +38,7 @@ def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_rati
     :return: dif_riv_idx
     :return: sec_map_idx
     :return: len_riv_idx
+    :return: riv_count
     """
     riv_count = 0
     for i in range( ny ):
@@ -92,7 +93,7 @@ def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_rati
     riv_count = 0
     for i in range( ny ):
         for j in range( nx ):
-            if(domain[i,j] == 0 or riv[i,j] == 1):
+            if(domain[i,j] == 0 or riv[i,j] != 1):
                 continue
             # domain(i, j) = 1 or 2 and riv(i, j) = 1
             # right
@@ -174,7 +175,7 @@ def riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_rati
         #enddo
     #endif
 
-    return(riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx)
+    return(riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx, riv_count)
 
 #end def riv_idx_setting
 
@@ -285,6 +286,7 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
     :return: kg0_idx
     :return: fpg_idx
     :return: rgl_idx
+    :return: slo_count
     """
     #real(8) distance, len, l1, l2, l3
     #real(8) l1_kin, l2_kin, l3_kin
@@ -334,7 +336,6 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
         for j in range( nx ):
             if(domain[i,j] == 0):
                 continue
-            slo_count = slo_count + 1
             slo_idx2i[slo_count] = i
             slo_idx2j[slo_count] = j
             domain_slo_idx[slo_count] = domain[i, j]
@@ -343,27 +344,28 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
             slo_ij2idx[i, j] = slo_count
             land_idx[slo_count] = land[i, j]
 
-            dif_slo_idx[slo_count] = dif[land[i, j]]
-            ns_slo_idx[slo_count] = ns_slope[land[i,j]]
-            soildepth_idx[slo_count] = soildepth[land[i, j]]
-            gammaa_idx[slo_count] = gammaa[land[i, j]]
+            dif_slo_idx[slo_count] = dif[int(land[i, j])-1]
+            ns_slo_idx[slo_count] = ns_slope[int(land[i,j])-1]
+            soildepth_idx[slo_count] = soildepth[int(land[i, j])-1]
+            gammaa_idx[slo_count] = gammaa[int(land[i, j])-1]
 
-            ksv_idx[slo_count] = ksv[land[i,j]]
-            faif_idx[slo_count] = faif[land[i,j]]
-            infilt_limit_idx[slo_count] = infilt_limit[land[i,j]]
+            ksv_idx[slo_count] = ksv[int(land[i,j])-1]
+            faif_idx[slo_count] = faif[int(land[i,j])-1]
+            infilt_limit_idx[slo_count] = infilt_limit[int(land[i,j])-1]
   
-            ka_idx[slo_count] = ka[land[i,j]]
-            gammam_idx[slo_count] = gammam[land[i,j]]
-            beta_idx[slo_count] = beta[land[i,j]]
-            da_idx[slo_count] = da[land[i,j]]
-            dm_idx[slo_count] = dm[land[i,j]]
+            ka_idx[slo_count] = ka[int(land[i,j])-1]
+            gammam_idx[slo_count] = gammam[int(land[i,j])-1]
+            beta_idx[slo_count] = beta[int(land[i,j])-1]
+            da_idx[slo_count] = da[int(land[i,j])-1]
+            dm_idx[slo_count] = dm[int(land[i,j])-1]
 
-            ksg_idx[slo_count] = ksg[land[i, j]]
-            gammag_idx[slo_count] = gammag[land[i, j]]
-            kg0_idx[slo_count] = kg0[land[i, j]]
-            fpg_idx[slo_count] = fpg[land[i, j]]
-            rgl_idx[slo_count] = rgl[land[i, j]]
+            ksg_idx[slo_count] = ksg[int(land[i, j])-1]
+            gammag_idx[slo_count] = gammag[int(land[i, j])-1]
+            kg0_idx[slo_count] = kg0[int(land[i, j])-1]
+            fpg_idx[slo_count] = fpg[int(land[i, j])-1]
+            rgl_idx[slo_count] = rgl[int(land[i, j])-1]
 
+            slo_count = slo_count + 1
         #enddo
     #enddo
 
@@ -452,7 +454,6 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
             if(domain[i,j] == 0):
                 continue
             # domain(i, j) = 1 or 2
-            slo_count = slo_count + 1
             # right
             if( direc[i,j] == 1 ):
                 ii = i
@@ -524,10 +525,12 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
             down_slo_1d_idx[slo_count] = slo_ij2idx[ii, jj]
             dis_slo_1d_idx[slo_count] = distance
             len_slo_1d_idx[slo_count] = length
+
+            slo_count = slo_count + 1
         #enddo
     #enddo
 
-    return(slo_idx2i, slo_idx2j, slo_ij2idx, down_slo_idx, domain_slo_idx, zb_slo_idx, dis_slo_idx, len_slo_idx, acc_slo_idx, down_slo_1d_idx, dis_slo_1d_idx, len_slo_1d_idx, land_idx, dif_slo_idx, ns_slo_idx, soildepth_idx, gammaa_idx, ksv_idx, faif_idx, infilt_limit_idx, ka_idx, gammam_idx, beta_idx, da_idx, dm_idx, ksg_idx, gammag_idx, kg0_idx, fpg_idx, rgl_idx)
+    return(slo_idx2i, slo_idx2j, slo_ij2idx, down_slo_idx, domain_slo_idx, zb_slo_idx, dis_slo_idx, len_slo_idx, acc_slo_idx, down_slo_1d_idx, dis_slo_1d_idx, len_slo_1d_idx, land_idx, dif_slo_idx, ns_slo_idx, soildepth_idx, gammaa_idx, ksv_idx, faif_idx, infilt_limit_idx, ka_idx, gammam_idx, beta_idx, da_idx, dm_idx, ksg_idx, gammag_idx, kg0_idx, fpg_idx, rgl_idx, slo_count)
 
 #end def slo_idx_setting
 

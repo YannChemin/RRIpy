@@ -1,5 +1,7 @@
 import numpy as np
 from RRI_Sub import *
+from RRI_Dam import *
+from RRI_GW import *
 
 def rri():
     """
@@ -440,10 +442,10 @@ def rri():
     print( "total area [km2] : ", num_of_cell * area / (10.0 ** 6.00))
 
     # river index setting
-    riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx = riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_length_switch)
+    riv_idx2i, riv_idx2j, riv_ij2idx, down_riv_idx, domain_riv_idx, width_idx, depth_idx, height_idx, area_ratio_idx, zb_riv_idx, dis_riv_idx, dif_riv_idx, sec_map_idx, len_riv_idx, riv_count = riv_idx_setting(ny, nx, dx, dy, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_length_switch)
 
-    # TODO slope index setting
-    slo_idx2i, slo_idx2j, slo_ij2idx, down_slo_idx, domain_slo_idx, zb_slo_idx, dis_slo_idx, len_slo_idx, acc_slo_idx, down_slo_1d_idx, dis_slo_1d_idx, len_slo_1d_idx, land_idx, dif_slo_idx, ns_slo_idx, soildepth_idx, gammaa_idx, ksv_idx, faif_idx, infilt_limit_idx, ka_idx, gammam_idx, beta_idx, da_idx, dm_idx, ksg_idx, gammag_idx, kg0_idx, fpg_idx, rgl_idx = slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gammaa, ksv, faif, infilt_limit, ka, gammaa, beta, da, dm, ksg, gammag, kg0, fpg, rgl, eight_dir, dy, dx, direc )
+    # slope index setting
+    slo_idx2i, slo_idx2j, slo_ij2idx, down_slo_idx, domain_slo_idx, zb_slo_idx, dis_slo_idx, len_slo_idx, acc_slo_idx, down_slo_1d_idx, dis_slo_1d_idx, len_slo_1d_idx, land_idx, dif_slo_idx, ns_slo_idx, soildepth_idx, gammaa_idx, ksv_idx, faif_idx, infilt_limit_idx, ka_idx, gammam_idx, beta_idx, da_idx, dm_idx, ksg_idx, gammag_idx, kg0_idx, fpg_idx, rgl_idx, slo_count = slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gammaa, ksv, faif, infilt_limit, ka, gammaa, beta, da, dm, ksg, gammag, kg0, fpg, rgl, eight_dir, dy, dx, direc )
 
     # TODO reading dam file
     damflg, dam_qin, dam_num, dam_name, dam_kind, dam_ix, dam_iy, dam_vol, dam_vol_temp, dam_volmax, dam_state, dam_qout, dam_loc, dam_floodq, dam_maxfloodq, dam_rate = dam_read(riv_count, dam_switch, damfile)
@@ -470,7 +472,7 @@ def rri():
     # if init_slo_switch = 1 => read from file
     if(init_slo_switch == 1):
         inith = np.zeros((ny, nx))
-        f13 = open(initfile_slo)
+        f13 = open(datadir+initfile_slo)
         lines_list = f13.readlines()
         for i in range( ny ):
             for j in range( nx ):
@@ -486,7 +488,7 @@ def rri():
     # if init_riv_switch = 1 => read from file
     if(init_riv_switch == 1):
         inith = np.zeros((ny, nx))
-        f13 = open(initfile_riv)
+        f13 = open(datadir+initfile_riv)
         lines_list = f13.readlines()
         for i in range( ny ):
             for j in range ( nx ):
@@ -502,7 +504,7 @@ def rri():
     # if init_gw_switch = 1 => read from file
     if(init_gw_switch == 1):
         inith = np.zeros((ny, nx))
-        f13 = open(initfile_gw)
+        f13 = open(datadir+initfile_gw)
         lines_list = f13.readlines()
         for i in range( ny ):
             for j in range ( nx ):
@@ -518,7 +520,7 @@ def rri():
 
     if(init_gampt_ff_switch == 1):
         inith = np.zeros((ny, nx))
-        f13 = open(initfile_gampt_ff)
+        f13 = open(datadir+initfile_gampt_ff)
         lines_list = f13.readlines()
         for i in range( ny ):
             for j in range ( nx ):
@@ -535,7 +537,7 @@ def rri():
 
     # div file
     if( div_switch == 1 ):
-        f20 = open(divfile)
+        f20 = open(datadir+divfile)
         lines_list = f20.readlines()
         div_id_max = len(lines_list)
         print( "div_id_max : ", div_id_max)
@@ -553,15 +555,17 @@ def rri():
 
     # hydro file
     if( hydro_switch == 1 ):
-        f5 = open(location_file)
+        f5 = open(datadir+location_file)
         lines_list = f5.readlines()
-        f1012 = open(hydro_file)
-        f1013 = open(hydro_hr_file)
+        f1012 = open(datadir+hydro_file)
+        f1013 = open(datadir+hydro_hr_file)
         maxhydro = len(lines_list) - 1
         hydro_i = np.zeros(maxhydro)
         hydro_j = np.zeros(maxhydro)
         for i in range( maxhydro ):
-            ctemp, hydro_i[i], hydro_j[i] = lines_list[i].split(" ")
+            ctemp = lines_list[i].split(" ")[0]
+            hydro_i[i] = int(lines_list[i].split(" ")[1])
+            hydro_j[i] = int(lines_list[i].split(" ")[2])
         #enddo
         f5.close()
     #endif

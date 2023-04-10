@@ -1,5 +1,6 @@
 # RRI_Dam.f90
 # modified by T.Sayama on Dec. 2, 2020
+import numpy as np
 
 def dam_read(riv_count, dam_switch, damfile):
     """
@@ -28,10 +29,14 @@ def dam_read(riv_count, dam_switch, damfile):
     """
     damflg = np.zeros(riv_count)
     dam_qin = np.zeros(riv_count)
+    dam_num = 0 # Initialize value to 0
+    # If a file is available, read from it and update
     if( dam_switch == 1 ): 
         f99 = open(damfile)
         lines_list = f99.readlines()
         dam_num = int(lines_list[0]) #only one value in the first line
+   
+    # Create arrays from dam_num length
     dam_name = np.zeros(dam_num)
     dam_kind = np.zeros(dam_num)
     dam_ix = np.zeros(dam_num)
@@ -45,13 +50,16 @@ def dam_read(riv_count, dam_switch, damfile):
     dam_floodq = np.zeros(dam_num)
     dam_maxfloodq = np.zeros(dam_num)
     dam_rate = np.zeros(dam_num)
-    # Scroll through the dam descriptions lines (one dam per line)
-    for i in range( len(line_list) - 1 ):
-        dam_name[i], dam_iy[i], dam_ix[i], dam_volmax[i], dam_floodq[i], dam_maxfloodq[i], dam_rate[i], dam_vol[i] = lines_list[i+1].split("")
-        dam_loc[i] = riv_ij2idx( dam_iy[i], dam_ix[i] )
-        damflg[dam_loc[i]] = i
-    #enddo
-    f99.close()
+    
+    # Only if a file is present, then process the import of values for each dam
+    if( dam_switch == 1 ): 
+        # Scroll through the dam descriptions lines (one dam per line)
+        for i in range( len(lines_list) - 1 ):
+            dam_name[i], dam_iy[i], dam_ix[i], dam_volmax[i], dam_floodq[i], dam_maxfloodq[i], dam_rate[i], dam_vol[i] = lines_list[i+1].split("")
+            dam_loc[i] = riv_ij2idx( dam_iy[i], dam_ix[i] )
+            damflg[dam_loc[i]] = i
+        #enddo
+        f99.close()
     
     return(damflg, dam_qin, dam_num, dam_name, dam_kind, dam_ix, dam_iy, dam_vol, dam_vol_temp, dam_volmax, dam_state, dam_qout, dam_loc, dam_floodq, dam_maxfloodq, dam_rate)
 #end def dam_read
@@ -97,16 +105,16 @@ def dam_operation(dam_qout, damflg, k, dam_maxfloodq, dam_rate, dam_qin, dam_flo
         if ( dam_qin[k] < dam_floodq[damflg[k]] ):
             if( dam_vol(damflg[k]) <= 0 ): # 
                 dam_qout[damflg[k]] = dam_qin[k]
-            else #
+            else: #
                 if( dam_qin[k] < 0.25 * dam_floodq[damflg[k]] ):
                     dam_qout[damflg[k]] = 0.25 * dam_floodq[damflg[k]] #
                     qdiff = (dam_qin[k] - dam_qout[damflg[k]]) #
                     dam_vol_temp[damflg[k]] = dam_vol_temp[damflg[k]] + qdiff * ddt #
-                else
+                else:
                     dam_qout[damflg[k]] = dam_qin[k]
                 #endif
             #endif
-        else
+        else:
             if (dam_state[damflg[k]] == 0):
                 # still have space
                 dam_qout[damflg[k]] = dam_floodq[damflg[k]]

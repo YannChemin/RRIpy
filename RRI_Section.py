@@ -87,7 +87,7 @@ def set_section(sec_id_max, sec_map, secfile, depth, width, height, riv):
 #end
 
 
-def sec_hq_riv(h, dh, k, q):
+def sec_hq_riv(sec_map_idx, k, sec_div, sec_hr, h, sec_peri, sec_ns_river, sec_b, sec_area, dh ):
     """
     Section h q river
 
@@ -100,6 +100,7 @@ def sec_hq_riv(h, dh, k, q):
     :param sec_ns_river:
     :param sec_b:
     :param sec_area:
+    :param dh:
     
     :return: q the discharge
     """

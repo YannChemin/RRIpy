@@ -48,7 +48,9 @@ def funcr( riv_count, vr_idx, hr_idx, bound_riv_wlev_switch, tt_max_bound_riv_wl
 
     qr_idx = qr_calc(hr_idx)
     if( div_switch == 1 ):
-        call RRI_Div(qr_idx, hr_idx, qr_div_idx)
+        #call RRI_Div(qr_idx, hr_idx, qr_div_idx)
+        ? = RRI_Div(qr_idx, hr_idx, qr_div_idx)
+
 
     # dam control
     if( dam_switch == 1 ):
@@ -223,7 +225,7 @@ def qr_calc(hr_idx, domain_riv_idx, zb_riv_idx, dif_riv_idx, dis_riv_idx, down_r
 #enddef qr_calc
 
 
-def hq_riv(dh, ns_river, w, h, k):
+def hq_riv(dh, ns_river, w, h, k, sec_map_idx, sec_div, sec_hr, sec_peri, sec_ns_river, sec_b, sec_area):
     """
     Water depth and discharge relationship
 
@@ -232,6 +234,13 @@ def hq_riv(dh, ns_river, w, h, k):
     :param w:
     :param h:
     :param k:
+    :param sec_map_idx:
+    :param sec_div:
+    :param sec_hr:
+    :param sec_peri:
+    :param sec_ns_river:
+    :param sec_b:
+    :param sec_area:
 
     :return: q
     """
@@ -244,7 +253,8 @@ def hq_riv(dh, ns_river, w, h, k):
     q = a * r ** (2.0 / 3.0) * w * h
 
     if( sec_map_idx[k] > 0 ):
-        call sec_hq_riv(h, dh, k, q)
+        #call sec_hq_riv(h, dh, k, q)
+        q = sec_hq_riv(sec_map_idx, k, sec_div, sec_hr, h, sec_peri, sec_ns_river, sec_b, sec_area, dh )
     #endif
 
     # discharge per unit area

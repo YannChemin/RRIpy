@@ -1,4 +1,4 @@
-from RRI_Input import *
+import numpy as np
 from RRI_Sub import *
 
 def rri():
@@ -6,76 +6,167 @@ def rri():
     RRI model as a function
 
     :Author: T.Sayama
-
     :Translator: Y. Chemin
-
     :Version: 1.4.2.7
     """
-    # TODO at some point
-    #from globals import runge_mod
-    #from globals import dam_mod.dam_switch as dam_switch
-    #from globals import dam_mod.dam_vol_temp as dam_vol_temp
-    #from globals import tecout_mod
-
-    # variable definition
-
-    # topographic variable
-    #float nodata
-    #float x1, x2, y1, y2, d1, d2, d3, d4
-
-    # rainfall variable
-    #int rain_i[:], rain_j[:]
-    #int tt_max_rain
-    #int t_rain[:]
-    #int nx_rain, ny_rain
-    #float qp[:,:,:], qp_t[:,:], qp_t_idx[:]
-
-    # calculation variable
-    #float rho, total_area
-    #float vr_out
-
-    #float hs[:,:], hr[:,:], hg[:,:], inith[:,:]
-    #float qs_ave[:,:,:], qg_ave[:,:,:], qr_ave[:,:]
-
-    #float fs[:], hs_idx[:], fr[:], hr_idx[:], fg[:], hg_idx[:]
-    #float qr_idx[:], qr_ave_idx[:], qr_ave_temp_idx[:]
-    #float vr_idx[:]
-    #float qs_idx[:,:], qs_ave_idx[:,:], qs_ave_temp_idx[:,:]
-    #float qg_idx[:,:], qg_ave_idx[:,:], qg_ave_temp_idx[:,:]
-    #float gampt_ff_idx[:], gampt_f_idx[:]
-
-    #float rdummy_dim[:]
-
-    # other variable
-    #int i, j, t, k, ios, itemp, jtemp, tt, ii, jj
-    #int out_next
-    #float out_dt
-    #float rtemp
-    #float ss, sr, si, sg, sinit, sout
-    #int idummy
-    #float rdummy
-    #float rain_sum
-    #float distance
-    #float ddt_chk_riv, ddt_chk_slo
-    #character*256 ctemp
-    #character*6 t_char
-    #int div_org_i, div_org_j, div_dest_i, div_dest_j
-
-    # calcHydro
-    #character*256 hydro_file, hydro_hr_file
-    #parameter( hydro_file = "hydro.txt" )
-    #parameter( hydro_hr_file = "hydro_hr.txt" )
-    #int hydro_i[:], hydro_j[:]
-    #int maxhydro
-
-    # ro
-    #character*256 ofile_ro, outdir1, outdir2
-    #int kk, l
-
     ##########################################################
     ### STEP 0: FILE NAME AND PARAMETER SETTING
     ##########################################################
     # This is now "from RRI_Input import *" at the beginning of the file
+    version = "RRI_Input_Format_Ver1_4_2"
+    datadir = "/home/yann/dev/RRI_PY/solo30s/"
+
+    rainfile = "rain/rain_.dat"
+    demfile = "topo/adem.txt"
+    accfile = "topo/acc.txt"
+    dirfile = "topo/adir.txt"
+
+    utm = 0				# utm(1) or latlon(0)
+    eight_dir = 1			# 4-direction (0), 8-direction(1)
+    lasth = 360			        # lasth(hour)
+    dt = 600			        # dt(second)
+    dt_riv = 60			        # dt_riv
+    outnum = 60			        # outnum [-]"
+    xllcorner_rain = 110.400000	        # xllcorner_rain
+    yllcorner_rain = -8.158333	        # yllcorner_rain
+    cellsize_rain_x = 0.0083333333	# cellsize_rain"
+    cellsize_rain_y = 0.0083333333	# cellsize_rain"
+
+    ns_river            = 3.000e-2      # ns_river
+    num_of_landuse 	= 1		# num_of_landuse
+    dif 		= [1]		# diffusion(1) or kinematic(0), one per LU
+    ns_slope 	        = [4.000e-1]    # ns_slope, one per LU
+    soildepth 	        = [1.0000] 	# soildepth, one per LU
+    gammaa 		= [4.750e-1]    # gammaa, one per LU
+
+    ksv 		= [0.0000]     	# kv (m/s), one per LU
+    faif 		= [3.163e-1]   	# Sf (m), one per LU
+
+    ka 		        = [0.0000]     	# ka, one per LU
+    gammam 		= [0.0000]	# gammam, one per LU
+    beta 		= [8.0000]     	# beta, one per LU
+
+    ksg		        = [0.0]         # ksg (m/s), 1/LU -- set zero for no bedrock gw
+    gammag		= [0.0370]      # gammag (-), one per LU
+    kg0		        = [5.7e-5]      # kg0 (m/s), one per LU
+    fpg		        = [0.10]        # fg (-), one per LU
+    rgl		        = [0.0]         # rgl, one per LU
+
+    riv_thresh = 20			# riv_thresh
+    width_param_c = 5.000		# width_param_c (2.5)
+    width_param_s = 3.50e-1		# width_param_s (0.4)
+    depth_param_c = 9.50e-1		# depth_param_c (0.1)
+    depth_param_s = 2.00e-1		# depth_param_s (0.4)
+    height_param = 0.000		# height_param
+    height_limit_param = 20		# height_limit_param
+
+    rivfile_switch = 1
+    widthfile = "riv/width.txt"
+    depthfile = "riv/depth.txt"
+    heightfile = "riv/height.txt"
+
+    init_slo_switch = 0
+    init_riv_switch = 0
+    init_gw_switch = 0
+    init_gampt_ff_switch = 0
+    initfile_slo = "init/hs_init.out"
+    initfile_riv = "init/hr_init.out"
+    initfile_gw = "init/hg_init.out"
+    initfile_gampt_ff = "init/gamptff_init.out"
+
+    bound_slo_wlev_switch = 0
+    bound_riv_wlev_switch = 0
+    boundfile_slo_wlev = "bound/hs_wlev_bound.txt"
+    boundfile_riv_wlev = "bound/hr_wlev_bound.txt"
+
+    bound_slo_disc_switch = 0
+    bound_riv_disc_switch = 0
+    boundfile_slo_disc = "bound/qs_bound.txt"
+    boundfile_riv_disc = "bound/qr_bound.txt"
+
+    land_switch = 0
+    landfile = "topo/landuse.txt"
+
+    dam_switch = 0
+    damfile = "damcnt.txt"
+
+    div_switch = 0
+    div_switch = "div.txt"
+
+    evp_switch = 0
+    evpfile = "rain/Evp.dat"
+    xllcorner_evp = 100.000000		# xllcorner_evp
+    yllcorner_evp = 10.000000		# yllcorner_evp
+    cellsize_evp_x = 0.0083333300	# cellsize x
+    cellsize_evp_y = 0.0083333300       # cellsize y
+
+    sec_length_switch = 0
+    sec_length_file = "riv/length.txt"
+
+    sec_switch = 0
+    sec_map_file = "riv/sec_map.txt"
+    sec_file = "riv/section/sec_"
+
+    outswitch_hs = 1
+    outswitch_hr = 1
+    outswitch_hg = 0
+    outswitch_qr = 1
+    outswitch_qu = 0
+    outswitch_qv = 0
+    outswitch_gu = 0
+    outswitch_gv = 0
+    outswitch_gampt_ff = 1
+    outswitch_storage = 1
+    outfile_hs = "out/hs_"
+    outfile_hr = "out/hr_"
+    outfile_hg = "out/hg_"
+    outfile_qr = "out/qr_"
+    outfile_qu = "out/qu_"
+    outfile_qv = "out/qv_"
+    outfile_gu = "out/gu_"
+    outfile_gv = "out/gv_"
+    outfile_gampt_ff = "out/gampt_ff_"
+    outfile_storage = "out/storage.dat"
+
+    hydro_switch = 1
+    hydro_file = "hydro.txt"
+    hydro_hr_file = "hydro_hr.txt"
+
+    location_file = "location.txt"
+
+    # Parameter Check
+    for i in range(0, num_of_landuse):
+        if( ksv[i] > 0.0 and ka[i] > 0.0 ):
+            raise Exception ("Error: both ksv and ka are non-zero.")
+        if( gammam[i] > gammaa[i] ):
+            raise Exception ("Error: gammam must be smaller than gammaa.")
+    #enddo
+
+    # Set da, dm and infilt_limit
+    da = np.zeros(num_of_landuse)
+    dm = np.zeros(num_of_landuse)
+    infilt_limit = np.zeros(num_of_landuse)
+    for i in range(0, num_of_landuse):
+        if( soildepth[i] > 0.0 and ksv[i] > 0.0 ):
+            infilt_limit[i] = soildepth[i] * gammaa[i]
+        if( soildepth[i] > 0.0 and ka[i] > 0.0 ):
+            da[i] = soildepth[i] * gammaa[i]
+        if( soildepth[i] > 0.0 and ka[i] > 0.0 and gammam[i] > 0.0 ):
+            dm[i] = soildepth[i] * gammam[i]
+    #enddo
+
+    # if ksg(i) = 0.d0 -> no gw calculation
+    gw_switch = 0
+    for i in range(0, num_of_landuse):
+        if( ksg[i] > 0.0 ):
+            gw_switch = 1
+        else:
+            gammag[i] = 0.0
+            kg0[i] = 0.0
+            fpg[i] = 0.0
+            rgl[i] = 0.0
+        #endif
+    #enddo
 
     ##########################################################
     ### STEP 1: FILE READING 
@@ -224,7 +315,7 @@ def rri():
 
     width = np.where(riv == 1, width_param_c * ( acc * dx * dy * 1.e-6 ) ** width_param_s, width)
     depth = np.where(riv == 1, depth_param_c * ( acc * dx * dy * 1.e-6 ) ** depth_param_s, depth)
-    height = np.where(riv == 1 and acc > height_limit_param, height_param, height)
+    height = np.where((riv == 1) & (acc > height_limit_param), height_param, height)
 
     # river data is replaced by the information in files
     if( rivfile_switch >= 1 ):
@@ -233,9 +324,10 @@ def rri():
         lines_list = f10.readlines()
         for l in range(6,len(lines_list)):
             line = lines_list[l]
-            line_list = line.split(" ")
-            for m in range(len(line_list)):
-                width[l][m] = line_list[m]
+            #line_list = line.split(" ")
+            line_list = [s for s in line.split(' ') if s]
+            for m in range(nx):
+                width[l-6][m] = line_list[m]
 
         f10.close()
         #call read_gis_real(widthfile, width)
@@ -245,9 +337,10 @@ def rri():
         lines_list = f10.readlines()
         for l in range(6,len(lines_list)):
             line = lines_list[l]
-            line_list = line.split(" ")
-            for m in range(len(line_list)):
-                depth[l][m] = line_list[m]
+            #line_list = line.split(" ")
+            line_list = [s for s in line.split(' ') if s]
+            for m in range(nx):
+                depth[l-6][m] = line_list[m]
 
         f10.close()
         #call read_gis_real(depthfile, depth)
@@ -255,9 +348,10 @@ def rri():
         lines_list = f10.readlines()
         for l in range(6,len(lines_list)):
             line = lines_list[l]
-            line_list = line.split(" ")
-            for m in range(len(line_list)):
-                height[l][m] = line_list[m]
+            #line_list = line.split(" ")
+            line_list = [s for s in line.split(' ') if s]
+            for m in range(nx):
+                height[l-6][m] = line_list[m]
 
         f10.close()
         #call read_gis_real(heightfile, height)
@@ -272,9 +366,10 @@ def rri():
         lines_list = f10.readlines()
         for l in range(6,len(lines_list)):
             line = lines_list[l]
-            line_list = line.split(" ")
-            for m in range(len(line_list)):
-                sec_map[l][m] = line_list[m]
+            #line_list = line.split(" ")
+            line_list = [s for s in line.split(' ') if s]
+            for m in range(nx):
+                sec_map[l-6][m] = line_list[m]
 
         f10.close()
         #call read_gis_int(sec_map_file, sec_map)
@@ -291,9 +386,10 @@ def rri():
         lines_list = f10.readlines()
         for l in range(6,len(lines_list)):
             line = lines_list[l]
-            line_list = line.split(" ")
-            for m in range(len(line_list)):
-                sec_length[l][m] = line_list[m]
+            #line_list = line.split(" ")
+            line_list = [s for s in line.split(' ') if s]
+            for m in range(nx):
+                sec_length[l-6][m] = line_list[m]
 
         f10.close()
         #call read_gis_real(sec_length_file, sec_length)
@@ -305,7 +401,7 @@ def rri():
         zs = np.where( height > 0.0, zs + height, zs)
     else:
         # levee on only slope grid cells : zs is increased with height
-        zs = np.where( height > 0.0 and riv == 0, zs + height, zs)
+        zs = np.where( (height > 0.0) & (riv == 0), zs + height, zs)
     #endif
 
     #where(riv == 1) area_ratio = width / length
@@ -315,7 +411,7 @@ def rri():
     zb_riv = zs
     for i in range(ny):
         for j in range(nx):
-            zb[i, j] = zs[i, j] - soildepth[land[i,j]]
+            zb[i, j] = zs[i, j] - soildepth[int(land[i,j])]
             if(riv[i, j] == 1):
                 zb_riv[i, j] = zs[i, j] - depth[i, j]
         #enddo

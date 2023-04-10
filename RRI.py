@@ -634,7 +634,7 @@ def rri():
     # gw initial setting
     if(init_gw_switch != 1):
         hg_idx = hg_init(slo_count)
-        hg = sub_slo_idx2ij( hg_idx )
+        hg = sub_slo_idx2ij( hg, slo_count, slo_idx2i, slo_idx2j, hg_idx )
     #endif
 
     # initial storage calculation
@@ -644,42 +644,55 @@ def rri():
     sout = 0.0
     si = 0.0
     sg = 0.0
-    ss, sr, si, sg = storage_calc(hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx)
+    ss, sr, si, sg = storage_calc(ny, nx, hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx)
     sinit = ss + sr + si + sg
     # Write to file 1000
-    f1000 = open(outfile_storage)
-    f1000.write( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg )
+    f1000 = open(datadir+outfile_storage, "w")
+    f1000.write( str(rain_sum)+","+str(pevp_sum)+","+str(aevp_sum)+","+str(sout)+","+str(ss + sr + si + sg)+","+str(rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit)+","+str(ss)+","+str(sr)+","+str(si)+","+str(sg) )
     f1000.close()
 
     # reading rainfall data
-    f11 = open(rainfile)
+    f11 = open(datadir+rainfile)
     lines_list = f11.readlines()
-    t_rain[0], nx_rain, ny_rain = lines_list[0].split(" ")
-    tt_max_rain = (len(lines_list) / (nx_rain + 1)) - 1
+    # Too much "space" garbage !
+    line_list = [s for s in lines_list[0].split(' ') if s]
+    nx_rain = int(line_list[1])
+    ny_rain = int(line_list[2])
+    tt_max_rain = len(lines_list) - 1
     print("tt_max_rain = %f" %(tt_max_rain))
     t_rain = np.zeros(tt_max_rain)
+    t_rain[0] = float(line_list[0])
     qp = np.zeros((tt_max_rain, ny_rain, nx_rain))
     qp_t = np.zeros((ny, nx))
     print(tt_max_rain, nx_rain, ny_rain)
     qp = 0.0
     qp_t = 0.0 # added by T.Sayamaa on Dec 7, 2022 v1.4.2.7
-    for tt in range(0, tt_max_rain, nx_rain + 1):
-        if ( tt % ( nx_rain + 1 ) == 0 ):
-            t_rain[tt], nx_rain, ny_rain = lines_list[tt].split(" ")
+    for tt in range( len(lines_list) ):
+        # Not required since Python loads lines directly
+        #if ( tt % ( nx_rain + 1 ) == 0 ):
+        # Too much "space" garbage !
+        line_list = [s for s in lines_list[tt].split(' ') if s]
+        # Check for the presence of a header (Time[s], Latitude[d.dd], Longitude[d.dd])
+        if ( len(line_list) == 2 ):
+            t_rain[tt] = float(line_list[0])
+            nx_rain = int(line_list[1])
+            ny_rain = int(line_list[2])
+            # if not a header, then it is data
             for i in range( ny_rain ):
+                line_list = [s for s in lines_list[tt+1+i].split(' ') if s]
                 for j in range( nx_rain ):
-                    qp[tt, i, j] = lines_list[tt+i].split(" ")[j]
+                    qp[tt, i, j] = float(line_list[j])
                 #enddo
             #enddo
-        #ENDIF
+        #ENDIF # Not needed in Python
     #enddo
     # unit convert from (mm/h) to (m/s)
     qp = qp / 3600.0 / 1000.0
     for j in range( nx ):
-        rain_j[j] = int( (xllcorner + (float[j] - 0.50) * cellsize - xllcorner_rain) / cellsize_rain_x ) + 1
+        rain_j[j] = int( (xllcorner + (float(j) - 0.50) * cellsize - xllcorner_rain) / cellsize_rain_x ) + 1
     #enddo
     for i in range( ny ):
-        rain_i[i] = ny_rain - int( (yllcorner + (float[ny] - float[i] + 0.50) * cellsize - yllcorner_rain) / cellsize_rain_y )
+        rain_i[i] = ny_rain - int( (yllcorner + (float(ny) - float(i) + 0.50) * cellsize - yllcorner_rain) / cellsize_rain_y )
     #enddo
     f11.close()
     print( "done: reading rain file" )
@@ -718,6 +731,7 @@ def rri():
 
     # For TSAS Output (Initial Condition)
     hs_idx = sub_slo_ij2idx( hs )
+    #TODO hs_idx = sub_slo_ij2idx( k, slo_count, a_idx, a, slo_idx2i, slo_idx2j )
     hr_idx = sub_riv_ij2idx( hr )
     #call RRI_TSAS(0, hs_idx, hr_idx, hg_idx, qs_ave_idx, qr_ave_idx, qg_ave_idx, qp_t_idx)
 
@@ -1425,7 +1439,7 @@ def rri():
     # check water balance
     if(t % 1 == 0):
         #call storage_calc(hs, hr, hg, ss, sr, si, sg)
-        ss, sr, si, sg = storage_calc(hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx)
+        ss, sr, si, sg = storage_calc(ny, nx, hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx)
         print( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit))
         f1000.write( rain_sum, pevp_sum, aevp_sum, sout, ss + sr + si + sg, (rain_sum - aevp_sum - sout - (ss + sr + si + sg) + sinit), ss, sr, si, sg)
     #endif

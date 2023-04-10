@@ -1,4 +1,5 @@
 # RRI_Sub
+import numpy as np
 
 # river index setting
 def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_riv, dif, land, sec_map, len_riv, direc, sec_len_switch):
@@ -99,44 +100,44 @@ def riv_idx_setting(ny, nx, domain, riv, width, depth, height, area_ratio, zb_ri
                 jj = j + 1
                 distance = dx
             # right down
-            else if( direc[i,j] == 2 ):
+            elif( direc[i,j] == 2 ):
                 ii = i + 1
                 jj = j + 1
                 distance = np.sqrt( dx*dx + dy*dy )
             # down
-            else if( direc[i,j] == 4 ):
+            elif( direc[i,j] == 4 ):
                 ii = i + 1
                 jj = j
                 distance = dy
             # left down
-            else if( direc[i,j] == 8 ):
+            elif( direc[i,j] == 8 ):
                 ii = i + 1
                 jj = j - 1
                 distance = np.sqrt( dx*dx + dy*dy )
             # left
-            else if( direc[i,j] == 16 ):
+            elif( direc[i,j] == 16 ):
                 ii = i
                 jj = j - 1
                 distance = dx
             # left up
-            else if( direc[i,j] == 32 ):
+            elif( direc[i,j] == 32 ):
                 ii = i - 1
                 jj = j - 1
                 distance = np.sqrt( dx*dx + dy*dy )
             # up
-            else if( direc[i,j] == 64 ):
+            elif( direc[i,j] == 64 ):
                 ii = i - 1
                 jj = j
                 distance = dy
             # right up
-            else if( direc[i,j] ==.128 ):
+            elif( direc[i,j] ==.128 ):
                 ii = i - 1
                 jj = j + 1
                 distance = np.sqrt( dx*dx + dy*dy )
-            else if( direc[i,j] == 0 or direc[i,j] == -1 ):
+            elif( direc[i,j] == 0 or direc[i,j] == -1 ):
                 ii = i
                 jj = j
-            else
+            else:
                 raise Exception ( "dir[%d, %d] error %f" % ( i, j, direc[i, j]) )
             #endif
 
@@ -221,7 +222,7 @@ def sub_riv_idx2ij( a_idx, a ):
 #end def sub_riv_idx2ij
 
 
-def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gammaa, ksv, faif, infilt_limit, ka, gammaa, beta, da, dm, ksg, gammag, kg0, fpg, rgl, eight_dir, dy, dx, direc ):
+def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gammaa, ksv, faif, infilt_limit, ka, gammam, beta, da, dm, ksg, gammag, kg0, fpg, rgl, eight_dir, dy, dx, direc ):
     """
     Slope index setting
 
@@ -234,7 +235,7 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
     :param dif:
     :param ns_slope:
     :param soildepth:
-    :param gammaaa:
+    :param gammaa:
     :param ksv:
     :param faif:
     :param infilt_limit:
@@ -372,13 +373,13 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
         l1 = dy / 2.0
         l2 = dx / 2.0
         l3 = np.sqrt(dx ** 2.0 + dy ** 2.0) / 4.0
-    else if( eight_dir == 0 ):
+    elif( eight_dir == 0 ):
         # 4-direction
         lmax = 2
         l1 = dy
         l2 = dx
         l3 = 0.0
-    else
+    else:
         raise Exception ( "error: eight_dir should be 0 or 1.")
     #endif
 
@@ -387,7 +388,7 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
     down_slo_idx.fill(-1)
 
     for i in range( ny ):
-        do j in range( nx ):
+        for j in range( nx ):
             if(domain[i,j] == 0):
                 continue
             # domain(i, j) = 1 or 2
@@ -399,12 +400,12 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
                     jj = j + 1
                     distance = dx
                     length = l1
-                else if( l == 2 ):
+                elif( l == 2 ):
                     ii = i + 1
                     jj = j
                     distance = dy
                     length = l2
-                else if( l == 3 ):
+                elif( l == 3 ):
                     ii = i + 1
                     jj = j + 1
                     distance = np.sqrt( dx * dx + dy * dy )
@@ -458,54 +459,54 @@ def slo_idx_setting(ny, nx, domain, zb, acc, land, dif, ns_slope, soildepth, gam
                 distance = dx
                 length = l1_kin
             # right down
-            else if( direc[i,j] == 2 ):
+            elif( direc[i,j] == 2 ):
                 ii = i + 1
                 jj = j + 1
                 distance = np.sqrt( dx*dx + dy*dy )
                 length = l3_kin
             # down
-            else if( direc[i,j] == 4 ):
+            elif( direc[i,j] == 4 ):
                 ii = i + 1
                 jj = j
                 distance = dy
                 length = l2_kin
             # left down
-            else if( direc[i,j] == 8 ):
+            elif( direc[i,j] == 8 ):
                 ii = i + 1
                 jj = j - 1
                 distance = np.sqrt( dx*dx + dy*dy )
                 length = l3_kin
             # left    
-            else if( direc[i,j] == 16 ):
+            elif( direc[i,j] == 16 ):
                 ii = i
                 jj = j - 1
                 distance = dx
                 length = l1_kin
             # left up
-            else if( direc[i,j] == 32 ):
+            elif( direc[i,j] == 32 ):
                 ii = i - 1
                 jj = j - 1
                 distance = np.sqrt( dx*dx + dy*dy )
                 length = l3_kin
             # up
-            else if( direc[i,j] == 64 ):
+            elif( direc[i,j] == 64 ):
                 ii = i - 1
                 jj = j
                 distance = dy
                 length = l2_kin
             # right up
-            else if( direc[i,j] == 128 ):
+            elif( direc[i,j] == 128 ):
                 ii = i - 1
                 jj = j + 1
                 distance = np.sqrt( dx*dx + dy*dy )
                 length = l3_kin
-            else if( direc[i,j] == 0 or direc[i,j] == -1 ):
+            elif( direc[i,j] == 0 or direc[i,j] == -1 ):
                 ii = i
                 jj = j
                 distance = dx
                 length = l1_kin
             else:
-                raise Exception ("dir(%d, %d) error %d %d" %( i, j, direc[i, j])
+                raise Exception ("dir(%d, %d) error %d %d" % ( i, j, direc[i, j]))
             #endif
 
             if( ii > ny ):
@@ -601,7 +602,7 @@ def sub_slo_idx2ij4( a, slo_count, slo_idx2i, slo_idx2j, a_idx ):
 #end def sub_slo_idx2ij4
 
 
-def storage_calc(hs, hr, hg, domain, area, ):
+def storage_calc(hs, hr, hg, domain, area, riv_thresh, riv, gampt_ff, gammag_idx, slo_ij2idx):
     """
     # storage calculation
 
@@ -621,10 +622,6 @@ def storage_calc(hs, hr, hg, domain, area, ):
     :return: si
     :return: sg
     """
-    #real(8) hs(ny, nx), hr(ny, nx), hg(ny, nx)
-    #real(8) ss, sr, si, sg
-    #real(8) vr_temp # add v1.4
-
     ss = 0.0
     sr = 0.0
     si = 0.0
@@ -649,7 +646,7 @@ def storage_calc(hs, hr, hg, domain, area, ):
 
 
 
-def int2char( num )
+def int2char( num ):
     """
     numbers to characters
     
@@ -693,7 +690,7 @@ def hubeny_sub( x1_deg, y1_deg, x2_deg, y2_deg ):
     N = a / W
     M = a * (1. - e ** 2.0) / W**(3.0)
 
-    d = np.sqrt((dy * M) ** 2.0 + (dx * N * cos(mu)) ** 2.0)
+    d = np.sqrt((dy * M) ** 2.0 + (dx * N * np.cos(mu)) ** 2.0)
     
     return(d)
 

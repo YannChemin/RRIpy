@@ -1,4 +1,5 @@
 from RRI_Input import *
+from RRI_Sub import *
 
 def rri():
     """
@@ -155,7 +156,8 @@ def rri():
 
     # land : 1 ... num_of_landuse
     print( "num_of_landuse : %d", num_of_landuse )
-    land = np.where( land <= 0 or land > num_of_landuse, num_of_landuse, land)
+    land = np.where( land <= 0, num_of_landuse, land)
+    land = np.where( land > num_of_landuse, num_of_landuse, land)
 
     ##########################################################
     ### STEP 2: CALC PREPARATION 
